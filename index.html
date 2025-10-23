@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToothTrack - Dental Appointment System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-tooth"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>ToothTrack</h1>
+                    <p>Dental Appointment System</p>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="notifications">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge">2</span>
+            </div>
+            <div class="user-info">
+                <div class="user-details">
+                    <span class="user-name">Dr. Dela Cruz</span>
+                    <span class="user-role">Clinic Dentist</span>
+                </div>
+                <div class="user-avatar">Æ</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="nav-items">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-view="appointments">
+                    <i class="fas fa-calendar"></i>
+                    <span>All Appointments</span>
+                </a>
+                <a href="#" class="nav-item" data-view="patients">
+                    <i class="fas fa-users"></i>
+                    <span>Patients</span>
+                </a>
+                <a href="#" class="nav-item" data-view="schedule">
+                    <i class="fas fa-clock"></i>
+                    <span>Schedule</span>
+                </a>
+                <a href="#" class="nav-item" data-view="records">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Records</span>
+                </a>
+                <a href="#" class="nav-item" data-view="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="#" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+            <div class="clinic-info">
+                <h3>Smile Dental Clinic</h3>
+                <p>Ilocos Norte Branch</p>
+                <div class="clinic-details">
+                    <div class="detail-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>123 Rizal St, Laoag City</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-phone"></i>
+                        <span>(077) 123-4567</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="toggle-btn" id="patient-view">Patient View</button>
+                <button class="toggle-btn active" id="staff-view">Staff View</button>
+            </div>
+
+            <!-- Dashboard View -->
+            <div class="content-view active" id="dashboard-view">
+                <div class="welcome-section">
+                    <h2>Goodmorning, Dr. Dela Cruz!</h2>
+                    <p>You have 1 appointments scheduled for today. 1 is still pending confirmation.</p>
+                </div>
+
+                <div class="dashboard-cards">
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Today's Patient</h3>
+                            <div class="card-value">0</div>
+                            <p>0 pending confirmation.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>This Week</h3>
+                            <div class="card-value">0</div>
+                            <p>0 appointment schedule.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Completed</h3>
+                            <div class="card-value">0</div>
+                            <p>0 this month.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Revenue</h3>
+                            <div class="card-value">0</div>
+                            <p>-/+ percentage.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-sections">
+                    <div class="schedule-section">
+                        <h3>Today's Schedule</h3>
+                        <p>September 20, 2024 appointments</p>
+                        <div class="appointments-list">
+                            <div class="appointment-item">
+                                <div class="appointment-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>9:00 AM</span>
+                                </div>
+                                <div class="appointment-details">
+                                    <div class="patient-info">
+                                        <span class="patient-name">Dr. Dela Cruz</span>
+                                        <span class="procedure">cleaning</span>
+                                    </div>
+                                    <div class="appointment-status">
+                                        <span class="status-badge confirmed">confirmed</span>
+                                    </div>
+                                </div>
+                                <div class="appointment-contact">
+                                    <i class="fas fa-phone"></i>
+                                    <span>(077) 123-4567</span>
+                                </div>
+                            </div>
+                            <div class="appointment-item">
+                                <div class="appointment-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>10:30 AM</span>
+                                </div>
+                                <div class="appointment-details">
+                                    <div class="patient-info">
+                                        <span class="patient-name">Dr. Dela Cruz</span>
+                                        <span class="procedure">Root Canal</span>
+                                    </div>
+                                    <div class="appointment-status">
+                                        <span class="status-badge in-progress">in-progress</span>
+                                    </div>
+                                </div>
+                                <div class="appointment-contact">
+                                    <i class="fas fa-phone"></i>
+                                    <span>(077) 123-4567</span>
+                                </div>
+                            </div>
+                            <div class="appointment-item">
+                                <div class="appointment-time">
+                                    <i class="fas fa-clock"></i>
+                                    <span>2:00 PM</span>
+                                </div>
+                                <div class="appointment-details">
+                                    <div class="patient-info">
+                                        <span class="patient-name">Dr. Dela Cruz</span>
+                                        <span class="procedure">Consultation</span>
+                                    </div>
+                                    <div class="appointment-status">
+                                        <span class="status-badge pending">pending</span>
+                                    </div>
+                                </div>
+                                <div class="appointment-contact">
+                                    <i class="fas fa-phone"></i>
+                                    <span>(077) 123-4567</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="view-full-btn">View Full Schedule</button>
+                    </div>
+
+                    <div class="pending-actions-section">
+                        <h3>Pending Actions</h3>
+                        <p>Tasks that require your attention</p>
+                        <div class="actions-list">
+                            <div class="action-item">
+                                <div class="action-icon high">
+                                    <i class="fas fa-exclamation"></i>
+                                </div>
+                                <div class="action-details">
+                                    <span class="action-title">Confirm appointment</span>
+                                    <span class="action-description">Dr. Dela Cruz, Tomorrow, 3:00 PM</span>
+                                </div>
+                                <div class="action-priority">
+                                    <span class="priority-badge high">high</span>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <div class="action-icon medium">
+                                    <i class="fas fa-exclamation"></i>
+                                </div>
+                                <div class="action-details">
+                                    <span class="action-title">Follow-up call</span>
+                                    <span class="action-description">Dr. Dela Cruz, Post-surgery checkup</span>
+                                </div>
+                                <div class="action-priority">
+                                    <span class="priority-badge medium">medium</span>
+                                </div>
+                            </div>
+                            <div class="action-item">
+                                <div class="action-icon low">
+                                    <i class="fas fa-exclamation"></i>
+                                </div>
+                                <div class="action-details">
+                                    <span class="action-title">Update records</span>
+                                    <span class="action-description">Dr. Dela Cruz, Treatment completed</span>
+                                </div>
+                                <div class="action-priority">
+                                    <span class="priority-badge low">low</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="view-full-btn">View Full Schedule</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointments View -->
+            <div class="content-view" id="appointments-view">
+                <h2>Appointments</h2>
+                <p>Appointment management view would go here</p>
+            </div>
+
+            <!-- Patients View -->
+            <div class="content-view" id="patients-view">
+                <h2>Patients</h2>
+                <p>Patient management view would go here</p>
+            </div>
+
+            <!-- Schedule View -->
+            <div class="content-view" id="schedule-view">
+                <h2>Schedule</h2>
+                <p>Schedule management view would go here</p>
+            </div>
+
+            <!-- Records View -->
+            <div class="content-view" id="records-view">
+                <h2>Records</h2>
+                <p>Records management view would go here</p>
+            </div>
+
+            <!-- Settings View -->
+            <div class="content-view" id="settings-view">
+                <h2>Settings</h2>
+                <p>Settings view would go here</p>
+            </div>
+
+            <!-- Book Appointment View -->
+            <div class="content-view" id="book-appointment-view">
+                <div class="book-appointment-header">
+                    <button class="back-btn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="header-content">
+                        <h2>Book an Appointment</h2>
+                        <p>Schedule your dental visit</p>
+                    </div>
+                </div>
+
+                <div class="progress-indicator">
+                    <div class="progress-step active">
+                        <span class="step-number">1</span>
+                    </div>
+                    <div class="progress-line"></div>
+                    <div class="progress-step">
+                        <span class="step-number">2</span>
+                    </div>
+                    <div class="progress-line"></div>
+                    <div class="progress-step">
+                        <span class="step-number">3</span>
+                    </div>
+                    <div class="progress-line"></div>
+                    <div class="progress-step">
+                        <span class="step-number">4</span>
+                    </div>
+                </div>
+
+                <div class="service-selection-card">
+                    <h3>Select Service</h3>
+                    <p>Choose the dental service you need</p>
+                    
+                    <div class="services-grid">
+                        <div class="service-item">
+                            <h4>Dental Cleaning</h4>
+                            <p>Duration: 60 min</p>
+                            <div class="service-price">₱ 1,500</div>
+                        </div>
+                        <div class="service-item">
+                            <h4>Consultation</h4>
+                            <p>Duration: 30 min</p>
+                            <div class="service-price">₱ 800</div>
+                        </div>
+                        <div class="service-item">
+                            <h4>Tooth Filling</h4>
+                            <p>Duration: 1hr 30min</p>
+                            <div class="service-price">₱ 2,500</div>
+                        </div>
+                        <div class="service-item">
+                            <h4>Tooth Extraction</h4>
+                            <p>Duration: 45 min</p>
+                            <div class="service-price">₱ 2,000</div>
+                        </div>
+                        <div class="service-item">
+                            <h4>Root Canal</h4>
+                            <p>Duration: 2hrs</p>
+                            <div class="service-price">₱ 8,000</div>
+                        </div>
+                        <div class="service-item">
+                            <h4>Braces Consultation</h4>
+                            <p>Duration: 60 min</p>
+                            <div class="service-price">₱ 1,200</div>
+                        </div>
+                    </div>
+
+                    <button class="next-btn">Next: Choose a Dentist</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
