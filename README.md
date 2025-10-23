@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Figma to Website - Customization Guide
 
 This website has been created as a modern, responsive template that you can customize to match your specific Figma design. Since I couldn't access the detailed content from your Figma prototype, I've built a comprehensive foundation that you can easily modify.
@@ -153,3 +154,6 @@ If you need specific adjustments to match your Figma design exactly, please:
 3. Point out any layout differences
 
 The current website provides a solid foundation that can be easily customized to match any modern web design from Figma!
+=======
+# softEng
+>>>>>>> 4c144481f3105055f6bb95c2363121e68ea3dd59
