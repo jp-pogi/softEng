@@ -12,7 +12,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-left">
-            <div class="logo">
+            <div class="logo" id="header-logo" style="cursor: pointer;">
                 <div class="logo-icon">
                     <i class="fas fa-tooth"></i>
                 </div>
@@ -23,16 +23,29 @@
             </div>
         </div>
         <div class="header-right">
+            <div id="login-section" class="hidden">
+                <button class="btn btn-primary" id="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </div>
+            <div id="user-section">
             <div class="notifications">
                 <i class="fas fa-bell"></i>
                 <span class="notification-badge">2</span>
             </div>
-            <div class="user-info">
-                <div class="user-details">
-                    <span class="user-name">Dr. Dela Cruz</span>
-                    <span class="user-role">Clinic Dentist</span>
+            <button class="btn-icon" id="theme-toggle-btn" title="Toggle Dark/Light Mode">
+                <i class="fas fa-moon" id="theme-icon"></i>
+            </button>
+            <button class="btn-icon" id="shortcuts-help-btn" title="Keyboard Shortcuts (Ctrl+/)">
+                <i class="fas fa-keyboard"></i>
+            </button>
+                <div class="user-info" id="user-info">
+                    <div class="user-details">
+                        <span class="user-name" id="header-user-name">Loading...</span>
+                        <span class="user-role" id="header-user-role">Loading...</span>
+                    </div>
+                    <div class="user-avatar" id="header-user-avatar">U</div>
                 </div>
-                <div class="user-avatar">Æ</div>
             </div>
         </div>
     </header>
@@ -46,31 +59,108 @@
                     <i class="fas fa-chart-bar"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="nav-item" data-view="appointments">
+                <a href="#" class="nav-item" data-view="appointments" id="nav-appointments">
                     <i class="fas fa-calendar"></i>
-                    <span>All Appointments</span>
+                    <span id="nav-appointments-label">All Appointments</span>
                 </a>
-                <a href="#" class="nav-item" data-view="patients">
+                <a href="#" class="nav-item" data-view="patients" id="nav-patients">
                     <i class="fas fa-users"></i>
-                    <span>Patients</span>
+                    <span id="nav-patients-label">Patients</span>
                 </a>
-                <a href="#" class="nav-item" data-view="schedule">
+                <a href="#" class="nav-item" data-view="schedule" id="nav-schedule">
                     <i class="fas fa-clock"></i>
-                    <span>Schedule</span>
+                    <span id="nav-schedule-label">Schedule</span>
                 </a>
-                <a href="#" class="nav-item" data-view="records">
+                <a href="#" class="nav-item" data-view="records" id="nav-records">
                     <i class="fas fa-file-alt"></i>
-                    <span>Records</span>
+                    <span id="nav-records-label">Records</span>
                 </a>
-                <a href="#" class="nav-item" data-view="settings">
+                <a href="#" class="nav-item" data-view="settings" id="settings-nav">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
+                </a>
+                <a href="#" class="nav-item hidden" data-view="users" id="users-nav">
+                    <i class="fas fa-user-shield"></i>
+                    <span>User Management</span>
                 </a>
                 <a href="#" class="nav-item logout">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>
             </div>
+            <!-- Inline script to immediately hide navigation for patients -->
+            <script>
+                (function() {
+                    // Check if user is a patient and hide navigation immediately
+                    function hidePatientNavigation() {
+                        try {
+                            // Wait for dataManager to be available
+                            if (typeof dataManager === 'undefined' || !dataManager.getCurrentUser) {
+                                // If dataManager is not loaded yet, wait a bit and try again
+                                setTimeout(hidePatientNavigation, 100);
+                                return;
+                            }
+                            
+                            const user = dataManager.getCurrentUser();
+                            if (user && user.role === 'patient') {
+                                    // Hide Patients navigation
+                                    const patientsNav = document.getElementById('nav-patients');
+                                    if (patientsNav) {
+                                        patientsNav.style.display = 'none';
+                                        patientsNav.classList.add('hidden');
+                                    }
+                                    
+                                    // Hide Schedule navigation
+                                    const scheduleNav = document.getElementById('nav-schedule');
+                                    if (scheduleNav) {
+                                        scheduleNav.style.display = 'none';
+                                        scheduleNav.classList.add('hidden');
+                                    }
+                                    
+                                    // Hide Users navigation
+                                    const usersNav = document.getElementById('users-nav');
+                                    if (usersNav) {
+                                        usersNav.style.display = 'none';
+                                        usersNav.classList.add('hidden');
+                                    }
+                                    
+                                    // Hide clinic info section for patients
+                                    const clinicInfoSection = document.querySelector('.clinic-info');
+                                    if (clinicInfoSection) {
+                                        clinicInfoSection.style.display = 'none';
+                                    }
+                                    
+                                    // Update labels
+                                    const appointmentsLabel = document.getElementById('nav-appointments-label');
+                                    if (appointmentsLabel) appointmentsLabel.textContent = 'My Appointments';
+                                    
+                                    const recordsLabel = document.getElementById('nav-records-label');
+                                    if (recordsLabel) recordsLabel.textContent = 'My Records';
+                                    
+                                    // Add patient-view class to body
+                                    document.body.classList.add('patient-view');
+                                }
+                        } catch (e) {
+                            console.error('Error in hidePatientNavigation:', e);
+                        }
+                    }
+                    
+                    // Run immediately
+                    hidePatientNavigation();
+                    
+                    // Run when DOM is ready
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', hidePatientNavigation);
+                    } else {
+                        hidePatientNavigation();
+                    }
+                    
+                    // Run after a delay to catch late initialization
+                    setTimeout(hidePatientNavigation, 100);
+                    setTimeout(hidePatientNavigation, 500);
+                    setTimeout(hidePatientNavigation, 1000);
+                })();
+            </script>
             <div class="clinic-info">
                 <h3>Smile Dental Clinic</h3>
                 <p>Ilocos Norte Branch</p>
@@ -88,18 +178,36 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- View Toggle -->
-            <div class="view-toggle">
-                <button class="toggle-btn" id="patient-view">Patient View</button>
-                <button class="toggle-btn active" id="staff-view">Staff View</button>
+        <main class="main-content" id="main-content">
+            <!-- Login Required Message -->
+            <div id="login-required-message" class="hidden">
+                <div class="login-prompt">
+                    <div class="login-prompt-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Login Required</h2>
+                    <p>Please login to access the dashboard</p>
+                    <button class="btn btn-primary btn-large" onclick="window.location.href='homepage.html'">
+                        <i class="fas fa-sign-in-alt"></i> Go to Login Page
+                    </button>
+                </div>
             </div>
 
             <!-- Dashboard View -->
             <div class="content-view active" id="dashboard-view">
-                <div class="welcome-section">
-                    <h2>Goodmorning, Dr. Dela Cruz!</h2>
-                    <p>You have 1 appointments scheduled for today. 1 is still pending confirmation.</p>
+                <div class="welcome-section" id="welcome-section">
+                    <div class="welcome-content">
+                        <div class="welcome-avatar" id="welcome-avatar">
+                            <span id="avatar-initials">U</span>
+                        </div>
+                        <div class="welcome-text">
+                            <h2 id="welcome-greeting">Welcome back!</h2>
+                            <p id="welcome-message">Here's what's happening today.</p>
+                        </div>
+                    </div>
+                    <div class="welcome-actions" id="welcome-actions">
+                        <!-- Quick actions will be populated by JavaScript -->
+                    </div>
                 </div>
 
                 <div class="dashboard-cards">
@@ -108,9 +216,9 @@
                             <i class="fas fa-users"></i>
                         </div>
                         <div class="card-content">
-                            <h3>Today's Patient</h3>
-                            <div class="card-value">0</div>
-                            <p>0 pending confirmation.</p>
+                            <h3 id="dashboard-card-1-title">Today's Patients</h3>
+                            <div class="card-value" id="today-patients">0</div>
+                            <p id="today-pending">0 pending confirmation.</p>
                         </div>
                     </div>
                     <div class="dashboard-card">
@@ -118,9 +226,9 @@
                             <i class="fas fa-calendar"></i>
                         </div>
                         <div class="card-content">
-                            <h3>This Week</h3>
-                            <div class="card-value">0</div>
-                            <p>0 appointment schedule.</p>
+                            <h3 id="dashboard-card-2-title">This Week</h3>
+                            <div class="card-value" id="week-appointments">0</div>
+                            <p id="week-schedule">0 appointment schedule.</p>
                         </div>
                     </div>
                     <div class="dashboard-card">
@@ -128,9 +236,9 @@
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="card-content">
-                            <h3>Completed</h3>
-                            <div class="card-value">0</div>
-                            <p>0 this month.</p>
+                            <h3 id="dashboard-card-3-title">Completed</h3>
+                            <div class="card-value" id="month-completed">0</div>
+                            <p id="month-text">0 this month.</p>
                         </div>
                     </div>
                     <div class="dashboard-card">
@@ -139,152 +247,464 @@
                         </div>
                         <div class="card-content">
                             <h3>Revenue</h3>
-                            <div class="card-value">0</div>
-                            <p>-/+ percentage.</p>
+                            <div class="card-value" id="revenue">₱ 0</div>
+                            <p id="revenue-text">Total revenue.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-card" id="dentist-rating-card" style="display: none;">
+                        <div class="card-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Average Rating</h3>
+                            <div class="card-value" id="dentist-rating-value">0.0</div>
+                            <p id="dentist-rating-count">No reviews yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reports-section reports-margin">
+                    <div class="view-header">
+                        <div>
+                            <h3>Reports & Analytics</h3>
+                            <p>View detailed statistics and reports</p>
+                        </div>
+                        <button class="btn btn-outline" id="export-report-btn">
+                            <i class="fas fa-download"></i> Export Report
+                        </button>
+                    </div>
+                    <div class="reports-grid">
+                        <div class="report-card">
+                            <h4>Appointment Status Breakdown</h4>
+                            <div id="status-chart" class="status-chart">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                        <div class="report-card">
+                            <h4>Service Popularity</h4>
+                            <div id="service-chart" class="service-chart">
+                                <!-- Populated by JavaScript -->
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="dashboard-sections">
                     <div class="schedule-section">
-                        <h3>Today's Schedule</h3>
-                        <p>September 20, 2024 appointments</p>
+                        <h3 id="dashboard-schedule-title">Today's Schedule</h3>
+                        <p id="schedule-date-text">Loading appointments...</p>
                         <div class="appointments-list">
-                            <div class="appointment-item">
-                                <div class="appointment-time">
-                                    <i class="fas fa-clock"></i>
-                                    <span>9:00 AM</span>
-                                </div>
-                                <div class="appointment-details">
-                                    <div class="patient-info">
-                                        <span class="patient-name">Dr. Dela Cruz</span>
-                                        <span class="procedure">cleaning</span>
-                                    </div>
-                                    <div class="appointment-status">
-                                        <span class="status-badge confirmed">confirmed</span>
-                                    </div>
-                                </div>
-                                <div class="appointment-contact">
-                                    <i class="fas fa-phone"></i>
-                                    <span>(077) 123-4567</span>
-                                </div>
-                            </div>
-                            <div class="appointment-item">
-                                <div class="appointment-time">
-                                    <i class="fas fa-clock"></i>
-                                    <span>10:30 AM</span>
-                                </div>
-                                <div class="appointment-details">
-                                    <div class="patient-info">
-                                        <span class="patient-name">Dr. Dela Cruz</span>
-                                        <span class="procedure">Root Canal</span>
-                                    </div>
-                                    <div class="appointment-status">
-                                        <span class="status-badge in-progress">in-progress</span>
-                                    </div>
-                                </div>
-                                <div class="appointment-contact">
-                                    <i class="fas fa-phone"></i>
-                                    <span>(077) 123-4567</span>
-                                </div>
-                            </div>
-                            <div class="appointment-item">
-                                <div class="appointment-time">
-                                    <i class="fas fa-clock"></i>
-                                    <span>2:00 PM</span>
-                                </div>
-                                <div class="appointment-details">
-                                    <div class="patient-info">
-                                        <span class="patient-name">Dr. Dela Cruz</span>
-                                        <span class="procedure">Consultation</span>
-                                    </div>
-                                    <div class="appointment-status">
-                                        <span class="status-badge pending">pending</span>
-                                    </div>
-                                </div>
-                                <div class="appointment-contact">
-                                    <i class="fas fa-phone"></i>
-                                    <span>(077) 123-4567</span>
-                                </div>
-                            </div>
+                            <!-- Populated by JavaScript -->
                         </div>
-                        <button class="view-full-btn">View Full Schedule</button>
+                        <button class="view-full-btn" id="view-full-schedule-btn" onclick="document.querySelector('[data-view=\'schedule\']')?.click()">View Full Schedule</button>
                     </div>
 
                     <div class="pending-actions-section">
                         <h3>Pending Actions</h3>
                         <p>Tasks that require your attention</p>
                         <div class="actions-list">
-                            <div class="action-item">
-                                <div class="action-icon high">
-                                    <i class="fas fa-exclamation"></i>
-                                </div>
-                                <div class="action-details">
-                                    <span class="action-title">Confirm appointment</span>
-                                    <span class="action-description">Dr. Dela Cruz, Tomorrow, 3:00 PM</span>
-                                </div>
-                                <div class="action-priority">
-                                    <span class="priority-badge high">high</span>
-                                </div>
-                            </div>
-                            <div class="action-item">
-                                <div class="action-icon medium">
-                                    <i class="fas fa-exclamation"></i>
-                                </div>
-                                <div class="action-details">
-                                    <span class="action-title">Follow-up call</span>
-                                    <span class="action-description">Dr. Dela Cruz, Post-surgery checkup</span>
-                                </div>
-                                <div class="action-priority">
-                                    <span class="priority-badge medium">medium</span>
-                                </div>
-                            </div>
-                            <div class="action-item">
-                                <div class="action-icon low">
-                                    <i class="fas fa-exclamation"></i>
-                                </div>
-                                <div class="action-details">
-                                    <span class="action-title">Update records</span>
-                                    <span class="action-description">Dr. Dela Cruz, Treatment completed</span>
-                                </div>
-                                <div class="action-priority">
-                                    <span class="priority-badge low">low</span>
-                                </div>
-                            </div>
+                            <!-- Populated by JavaScript -->
                         </div>
-                        <button class="view-full-btn">View Full Schedule</button>
+                        <button class="view-full-btn" id="view-all-appointments-btn" onclick="document.querySelector('[data-view=\'appointments\']')?.click()">View All Appointments</button>
                     </div>
                 </div>
             </div>
 
             <!-- Appointments View -->
             <div class="content-view" id="appointments-view">
-                <h2>Appointments</h2>
-                <p>Appointment management view would go here</p>
+                <div class="view-header">
+                    <div>
+                        <h2 id="appointments-title">All Appointments</h2>
+                        <p id="appointments-subtitle">Manage and track all appointments</p>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="appointment-search" placeholder="Search appointments...">
+                    </div>
+                    <select id="appointment-status-filter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <input type="date" id="appointment-date-filter">
+                </div>
+
+                <div class="appointments-table-container">
+                    <table class="data-table" id="appointments-table">
+                        <thead>
+                            <tr id="appointments-table-header">
+                                <th>Date & Time</th>
+                                <th class="patient-column">Patient</th>
+                                <th>Service</th>
+                                <th>Dentist</th>
+                                <th>Notes</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointments-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="appointments-pagination" class="pagination-container"></div>
             </div>
 
             <!-- Patients View -->
             <div class="content-view" id="patients-view">
-                <h2>Patients</h2>
-                <p>Patient management view would go here</p>
+                <div class="view-header">
+                    <div>
+                        <h2 id="patients-title">Patients</h2>
+                        <p id="patients-subtitle">Manage patient records and information</p>
+                    </div>
+                    <button class="btn btn-primary hidden" id="add-patient-btn">
+                        <i class="fas fa-plus"></i> New Patient
+                    </button>
+                </div>
+
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="patient-search" placeholder="Search patients...">
+                    </div>
+                </div>
+
+                <div class="patients-grid" id="patients-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <div id="patients-pagination" class="pagination-container"></div>
             </div>
 
             <!-- Schedule View -->
             <div class="content-view" id="schedule-view">
-                <h2>Schedule</h2>
-                <p>Schedule management view would go here</p>
+                <div class="view-header">
+                    <div>
+                        <h2>Schedule</h2>
+                        <p>View and manage appointment schedule</p>
+                    </div>
+                    <div class="schedule-controls">
+                        <button class="btn btn-outline" id="prev-week-btn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="schedule-date-range">This Week</span>
+                        <button class="btn btn-outline" id="next-week-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <button class="btn btn-outline" id="today-btn">Today</button>
+                    </div>
+                </div>
+
+                <div class="calendar-view" id="calendar-view">
+                    <!-- Populated by JavaScript -->
+                </div>
             </div>
 
             <!-- Records View -->
             <div class="content-view" id="records-view">
-                <h2>Records</h2>
-                <p>Records management view would go here</p>
+                <div class="view-header">
+                    <div>
+                        <h2 id="records-title">Dental Records</h2>
+                        <p id="records-subtitle">Manage patient dental records and treatment history</p>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="record-search" placeholder="Search records...">
+                    </div>
+                    <select id="record-patient-filter" class="patient-filter-dropdown">
+                        <option value="">All Patients</option>
+                    </select>
+                </div>
+
+                <div class="records-list" id="records-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+                <div id="records-pagination" class="pagination-container"></div>
+            </div>
+
+            <!-- User Management View (Admin Only) -->
+            <div class="content-view" id="users-view">
+                <div class="view-header">
+                    <div>
+                        <h2>User Management</h2>
+                        <p>Manage system users and permissions</p>
+                    </div>
+                </div>
+
+                <div class="filters-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="user-search" placeholder="Search users...">
+                    </div>
+                    <select id="user-role-filter">
+                        <option value="">All Roles</option>
+                        <option value="admin">Administrator</option>
+                        <option value="dentist">Dentist</option>
+                        <option value="patient">Patient</option>
+                    </select>
+                </div>
+
+                <div class="users-table-container">
+                    <table class="data-table" id="users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="users-pagination" class="pagination-container"></div>
             </div>
 
             <!-- Settings View -->
             <div class="content-view" id="settings-view">
                 <h2>Settings</h2>
-                <p>Settings view would go here</p>
+                
+                <div class="settings-tabs">
+                    <button type="button" class="settings-tab active" data-tab="clinic" onclick="switchSettingsTab('clinic'); return false;">Clinic Info</button>
+                    <button type="button" class="settings-tab" data-tab="profile" onclick="switchSettingsTab('profile'); return false;">Profile</button>
+                    <button type="button" class="settings-tab" data-tab="notifications" onclick="switchSettingsTab('notifications'); return false;">Notifications</button>
+                    <button type="button" class="settings-tab" data-tab="preferences" onclick="switchSettingsTab('preferences'); return false;">Preferences</button>
+                    <button type="button" class="settings-tab" data-tab="data" onclick="switchSettingsTab('data'); return false;">Data Management</button>
+                </div>
+
+                <div class="settings-content">
+                    <!-- Clinic Settings -->
+                    <div class="settings-panel active" id="clinic-settings">
+                        <h3>Clinic Information</h3>
+                        <form id="clinic-settings-form">
+                            <div class="form-group">
+                                <label>Clinic Name</label>
+                                <input type="text" name="clinicName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Branch</label>
+                                <input type="text" name="branch" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <input type="text" name="address" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="tel" name="phone" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Working Hours (Weekdays)</label>
+                                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;">
+                                    <div>
+                                        <label style="font-size: 12px; color: #6B7280; margin-bottom: 4px; display: block;">Start Time</label>
+                                        <input type="time" name="weekdays-start" style="width: 100%;">
+                                    </div>
+                                    <span style="color: #6B7280; font-weight: 500; margin-top: 20px;">to</span>
+                                    <div>
+                                        <label style="font-size: 12px; color: #6B7280; margin-bottom: 4px; display: block;">End Time</label>
+                                        <input type="time" name="weekdays-end" style="width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Working Hours (Saturday)</label>
+                                <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center;">
+                                    <div>
+                                        <label style="font-size: 12px; color: #6B7280; margin-bottom: 4px; display: block;">Start Time</label>
+                                        <input type="time" name="saturday-start" style="width: 100%;">
+                                    </div>
+                                    <span style="color: #6B7280; font-weight: 500; margin-top: 20px;">to</span>
+                                    <div>
+                                        <label style="font-size: 12px; color: #6B7280; margin-bottom: 4px; display: block;">End Time</label>
+                                        <input type="time" name="saturday-end" style="width: 100%;">
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <!-- Profile Settings -->
+                    <div class="settings-panel" id="profile-settings">
+                        <h3>Profile Settings</h3>
+                        <form id="profile-settings-form">
+                            <div class="form-group">
+                                <label>Profile Picture</label>
+                                <div class="profile-picture-upload">
+                                    <div class="profile-picture-preview" id="profile-picture-preview">
+                                        <img id="profile-picture-img" src="" alt="Profile Picture" style="display: none; width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #2563EB;">
+                                        <div id="profile-picture-placeholder" style="width: 120px; height: 120px; border-radius: 50%; background: #E5E7EB; display: flex; align-items: center; justify-content: center; color: #6B7280; font-size: 48px; font-weight: 600; border: 3px solid #D1D5DB;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 12px;">
+                                        <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('profile-picture-input').click();" style="margin-right: 8px;">
+                                            <i class="fas fa-upload"></i> Choose Picture
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="remove-profile-picture-btn" style="display: none;">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                    <small style="color: #6B7280; display: block; margin-top: 8px;">Recommended: Square image, max 2MB</small>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Name</label>
+                                <input type="text" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone</label>
+                                <input type="tel" name="phone" placeholder="Enter your phone number">
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea name="address" rows="3" placeholder="Enter your address"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" name="password" placeholder="Leave blank to keep current password">
+                                <small style="color: #6B7280; display: block; margin-top: 4px;">Leave blank if you don't want to change your password</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Role</label>
+                                <input type="text" name="role" readonly>
+                            </div>
+                            <!-- System Rating (for dentists and patients) -->
+                            <div class="form-group" id="system-rating-group" style="display: none;">
+                                <label>Rate the System</label>
+                                <div id="system-rating-stars" style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                                    <input type="hidden" name="systemRating" id="system-rating-value" value="0">
+                                    <div style="display: flex; gap: 4px;">
+                                        <i class="fas fa-star system-rating-star" data-rating="1" style="font-size: 24px; color: #D1D5DB; cursor: pointer; transition: color 0.2s;"></i>
+                                        <i class="fas fa-star system-rating-star" data-rating="2" style="font-size: 24px; color: #D1D5DB; cursor: pointer; transition: color 0.2s;"></i>
+                                        <i class="fas fa-star system-rating-star" data-rating="3" style="font-size: 24px; color: #D1D5DB; cursor: pointer; transition: color 0.2s;"></i>
+                                        <i class="fas fa-star system-rating-star" data-rating="4" style="font-size: 24px; color: #D1D5DB; cursor: pointer; transition: color 0.2s;"></i>
+                                        <i class="fas fa-star system-rating-star" data-rating="5" style="font-size: 24px; color: #D1D5DB; cursor: pointer; transition: color 0.2s;"></i>
+                                    </div>
+                                    <span id="system-rating-text" style="color: #6B7280; font-size: 14px; margin-left: 8px;">Not rated</span>
+                                </div>
+                                <small style="color: #6B7280; display: block; margin-top: 8px;">Click on the stars to rate the system. You can change your rating anytime.</small>
+                            </div>
+                            <!-- Dentist-specific fields -->
+                            <div class="form-group" id="dentist-specialties-group" style="display: none;">
+                                <label>Expertise/Specialties *</label>
+                                <div id="specialties-container">
+                                    <!-- Specialties will be populated by JavaScript -->
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <select id="add-specialty-select" style="width: 100%; padding: 8px; border: 1px solid #D1D5DB; border-radius: 6px;">
+                                        <option value="">Add a specialty...</option>
+                                        <option value="General Dentistry">General Dentistry</option>
+                                        <option value="Orthodontics">Orthodontics</option>
+                                        <option value="Oral Surgery">Oral Surgery</option>
+                                        <option value="Periodontics">Periodontics</option>
+                                        <option value="Endodontics">Endodontics</option>
+                                        <option value="Prosthodontics">Prosthodontics</option>
+                                        <option value="Pediatric Dentistry">Pediatric Dentistry</option>
+                                        <option value="Cosmetic Dentistry">Cosmetic Dentistry</option>
+                                        <option value="Oral Pathology">Oral Pathology</option>
+                                        <option value="Oral Medicine">Oral Medicine</option>
+                                    </select>
+                                </div>
+                                <small style="color: #6B7280; display: block; margin-top: 4px;">Select your areas of expertise. Patients will see these when booking appointments.</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </form>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="settings-panel" id="notification-settings">
+                        <h3>Notification Preferences</h3>
+                        <div class="settings-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="email-notifications" checked>
+                                <span>Email Notifications</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="sms-notifications">
+                                <span>SMS Notifications</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="appointment-reminders" checked>
+                                <span>Appointment Reminders</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="new-appointments" checked>
+                                <span>New Appointment Alerts</span>
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" id="save-notification-settings">Save Changes</button>
+                    </div>
+
+                    <!-- Preferences -->
+                    <div class="settings-panel" id="preferences-settings">
+                        <h3>Preferences</h3>
+                        <div class="settings-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="dark-mode-toggle">
+                                <span>Dark Mode</span>
+                            </label>
+                            <div class="form-group">
+                                <label>Language</label>
+                                <select name="language">
+                                    <option value="en">English</option>
+                                    <option value="fil">Filipino</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date Format</label>
+                                <select name="dateFormat">
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="save-preferences">Save Changes</button>
+                    </div>
+
+                    <!-- Data Management -->
+                    <div class="settings-panel" id="data-settings">
+                        <h3>Data Management</h3>
+                        <div class="data-management-section">
+                            <div class="data-action-card">
+                                <h4>Backup & Restore</h4>
+                                <p>Export all data or restore from backup</p>
+                                <button class="btn btn-primary" onclick="dataBackup.showBackupRestoreUI()">
+                                    <i class="fas fa-database"></i> Manage Backups
+                                </button>
+                            </div>
+                            <div class="data-action-card">
+                                <h4>Export All Data</h4>
+                                <p>Download complete data backup</p>
+                                <button class="btn btn-outline" onclick="dataBackup.exportAllData()">
+                                    <i class="fas fa-download"></i> Export Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Book Appointment View -->
@@ -317,49 +737,199 @@
                     </div>
                 </div>
 
-                <div class="service-selection-card">
-                    <h3>Select Service</h3>
-                    <p>Choose the dental service you need</p>
-                    
-                    <div class="services-grid">
-                        <div class="service-item">
-                            <h4>Dental Cleaning</h4>
-                            <p>Duration: 60 min</p>
-                            <div class="service-price">₱ 1,500</div>
+                <!-- Step 1: Service Selection -->
+                <div class="booking-step active" data-step="1">
+                    <div class="service-selection-card">
+                        <h3>Select Service</h3>
+                        <p>Choose the dental service you need</p>
+                        
+                        <div class="services-grid">
+                            <div class="service-item" data-service="Dental Cleaning" data-price="1500" data-duration="60">
+                                <h4>Dental Cleaning</h4>
+                                <p>Duration: 60 min</p>
+                                <div class="service-price">₱ 1,500</div>
+                            </div>
+                            <div class="service-item" data-service="Consultation" data-price="800" data-duration="30">
+                                <h4>Consultation</h4>
+                                <p>Duration: 30 min</p>
+                                <div class="service-price">₱ 800</div>
+                            </div>
+                            <div class="service-item" data-service="Tooth Filling" data-price="2500" data-duration="90">
+                                <h4>Tooth Filling</h4>
+                                <p>Duration: 1hr 30min</p>
+                                <div class="service-price">₱ 2,500</div>
+                            </div>
+                            <div class="service-item" data-service="Tooth Extraction" data-price="2000" data-duration="45">
+                                <h4>Tooth Extraction</h4>
+                                <p>Duration: 45 min</p>
+                                <div class="service-price">₱ 2,000</div>
+                            </div>
+                            <div class="service-item" data-service="Root Canal" data-price="8000" data-duration="120">
+                                <h4>Root Canal</h4>
+                                <p>Duration: 2hrs</p>
+                                <div class="service-price">₱ 8,000</div>
+                            </div>
+                            <div class="service-item" data-service="Braces Consultation" data-price="1200" data-duration="60">
+                                <h4>Braces Consultation</h4>
+                                <p>Duration: 60 min</p>
+                                <div class="service-price">₱ 1,200</div>
+                            </div>
                         </div>
-                        <div class="service-item">
-                            <h4>Consultation</h4>
-                            <p>Duration: 30 min</p>
-                            <div class="service-price">₱ 800</div>
-                        </div>
-                        <div class="service-item">
-                            <h4>Tooth Filling</h4>
-                            <p>Duration: 1hr 30min</p>
-                            <div class="service-price">₱ 2,500</div>
-                        </div>
-                        <div class="service-item">
-                            <h4>Tooth Extraction</h4>
-                            <p>Duration: 45 min</p>
-                            <div class="service-price">₱ 2,000</div>
-                        </div>
-                        <div class="service-item">
-                            <h4>Root Canal</h4>
-                            <p>Duration: 2hrs</p>
-                            <div class="service-price">₱ 8,000</div>
-                        </div>
-                        <div class="service-item">
-                            <h4>Braces Consultation</h4>
-                            <p>Duration: 60 min</p>
-                            <div class="service-price">₱ 1,200</div>
+
+                        <div class="booking-actions">
+                            <button class="btn btn-outline back-step-btn hidden">Back</button>
+                            <button class="btn btn-primary next-step-btn">Next: Choose a Dentist</button>
                         </div>
                     </div>
+                </div>
 
-                    <button class="next-btn">Next: Choose a Dentist</button>
+                <!-- Step 2: Dentist Selection -->
+                <div class="booking-step" data-step="2">
+                    <div class="service-selection-card">
+                        <h3>Choose a Dentist</h3>
+                        <p>Select your preferred dentist</p>
+                        
+                        <div class="dentists-grid" id="dentists-grid">
+                            <div class="dentist-item" data-dentist="Dr. Juan Dela Cruz">
+                                <div class="dentist-icon">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <h4>Dr. Juan Dela Cruz</h4>
+                                <p>General Dentistry, Orthodontics, Oral Surgery</p>
+                                <div class="dentist-rating">
+                                    <i class="fas fa-star"></i>
+                                    <span>4.9 (10 years experience)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="booking-actions">
+                            <button class="btn btn-outline back-step-btn">Back</button>
+                            <button class="btn btn-primary next-step-btn">Next: Select Date & Time</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Date & Time Selection -->
+                <div class="booking-step" data-step="3">
+                    <div class="service-selection-card">
+                        <h3>Select Date & Time</h3>
+                        <p>Choose your preferred appointment date and time</p>
+                        
+                        <div class="date-time-selection">
+                            <div class="calendar-picker">
+                                <input type="date" id="appointment-date" min="" required>
+                            </div>
+                            <div class="time-slots" id="time-slots">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <div class="booking-actions">
+                            <button class="btn btn-outline back-step-btn">Back</button>
+                            <button class="btn btn-primary next-step-btn">Next: Patient Information</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Patient Information -->
+                <div class="booking-step" data-step="4">
+                    <div class="service-selection-card">
+                        <h3>Patient Information</h3>
+                        <p>Please provide your details</p>
+                        
+                        <form id="patient-info-form">
+                            <div class="form-group">
+                                <label>Full Name *</label>
+                                <input type="text" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email *</label>
+                                <input type="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number *</label>
+                                <input type="tel" name="phone" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Date of Birth</label>
+                                <input type="date" name="dob">
+                            </div>
+                            <div class="form-group">
+                                <label>Address</label>
+                                <textarea name="address" rows="3"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Medical History / Notes</label>
+                                <textarea name="notes" rows="4" placeholder="Any allergies, medications, or special requirements..."></textarea>
+                            </div>
+                        </form>
+
+                        <div class="booking-summary">
+                            <h4>Booking Summary</h4>
+                            <div class="summary-item">
+                                <span>Service:</span>
+                                <span id="summary-service">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Dentist:</span>
+                                <span id="summary-dentist">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Date & Time:</span>
+                                <span id="summary-datetime">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Price:</span>
+                                <span id="summary-price">-</span>
+                            </div>
+                        </div>
+
+                        <div class="booking-actions">
+                            <button class="btn btn-outline back-step-btn">Back</button>
+                            <button class="btn btn-primary" id="confirm-booking-btn">Confirm Booking</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Confirmation -->
+                <div class="booking-step" data-step="5">
+                    <div class="service-selection-card text-center">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h3>Appointment Confirmed!</h3>
+                        <p>Your appointment has been successfully booked</p>
+                        
+                        <div class="confirmation-details" id="confirmation-details">
+                            <!-- Populated by JavaScript -->
+                        </div>
+
+                        <div class="booking-actions">
+                            <button class="btn btn-primary" id="new-booking-btn">Book Another Appointment</button>
+                            <button class="btn btn-outline" id="view-dashboard-btn">Go to Dashboard</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <script src="data-manager.js"></script>
+    <script src="utils.js"></script>
+    <script src="validation-manager.js"></script>
+    <script src="role-permissions.js"></script>
+    <script src="auth-manager.js"></script>
+    <script src="audit-log.js"></script>
+    <script src="pagination-manager.js"></script>
+    <script src="bulk-operations.js"></script>
+    <script src="keyboard-shortcuts.js"></script>
+    <script src="data-backup.js"></script>
+    <script src="advanced-search.js"></script>
+    <script src="enhancements.js"></script>
+    <script src="patient-portal.js"></script>
+    <script src="user-management.js"></script>
+    <script src="views-handler.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -12,18 +12,41 @@
     <!-- Header -->
     <header class="header">
         <div class="header-container">
-            <div class="logo">
-                <div class="logo-icon">
-                    <i class="fas fa-tooth"></i>
+            <a href="homepage.html" style="text-decoration: none; color: inherit; display: flex;">
+                <div class="logo" style="cursor: pointer;">
+                    <div class="logo-icon">
+                        <i class="fas fa-tooth"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>ToothTrack</h1>
+                        <p>Dental Appointment System</p>
+                    </div>
                 </div>
-                <div class="logo-text">
-                    <h1>ToothTrack</h1>
-                    <p>Dental Appointment System</p>
+            </a>
+            <div class="header-buttons" id="header-buttons">
+                <div id="login-section" style="display: flex; gap: 12px;">
+                    <button class="btn btn-primary" id="login-btn" type="button" style="pointer-events: auto !important; cursor: pointer !important; z-index: 1001 !important; position: relative !important;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                    <button class="btn btn-outline" id="register-btn" type="button" style="pointer-events: auto !important; cursor: pointer !important; z-index: 1001 !important; position: relative !important;">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
                 </div>
-            </div>
-            <div class="header-buttons">
-                <button class="btn btn-outline" id="patient-login">Patient Login</button>
-                <button class="btn btn-primary" id="staff-login">Staff Login</button>
+                <div id="user-section" style="display: none; align-items: center; gap: 16px;">
+                    <a href="index.html" class="btn btn-outline" style="text-decoration: none;">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <div class="user-info" style="display: flex; align-items: center; gap: 12px;">
+                        <div style="text-align: right;">
+                            <div id="homepage-user-name" style="font-weight: 600; color: #1F2937;">User</div>
+                            <div id="homepage-user-role" style="font-size: 12px; color: #6B7280;">Role</div>
+                        </div>
+                        <div id="homepage-user-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: #2563EB; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">U</div>
+                    </div>
+                    <button class="btn btn-outline" id="homepage-logout-btn" style="color: #EF4444; border-color: #EF4444;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -48,22 +71,19 @@
                     </button>
                     <button class="btn btn-outline btn-large">Learn More</button>
                 </div>
-                <div class="hero-rating">
-                    <div class="stars">
+                <div class="hero-rating" id="hero-rating">
+                    <div class="stars" id="system-rating-stars-display">
                         <i class="fas fa-star"></i>
                         <i class="fas fa-star"></i>
                         <i class="fas fa-star"></i>
                         <i class="fas fa-star"></i>
-                        <i class="fas fa-star-half-alt"></i>
+                        <i class="fas fa-star"></i>
                     </div>
-                    <span class="rating-text">4.9/5 Trusted by 500+ patients</span>
+                    <span class="rating-text" id="system-rating-text">Loading ratings...</span>
                 </div>
             </div>
             <div class="hero-image">
-                <div class="image-placeholder">
-                    <i class="fas fa-image"></i>
-                    <p>Dental Examination Image</p>
-                </div>
+                <img src="dental.jpg" alt="Dental Examination" class="hero-image-img" style="width: 100%; height: 400px; object-fit: cover; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
             </div>
         </div>
     </section>
@@ -78,7 +98,7 @@
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">
-                        <i class="fas fa-calendar-clock"></i>
+                        <i class="fas fa-calendar-check"></i>
                     </div>
                     <h3>Easy Scheduling</h3>
                     <p>Book appointments 24/7 with our convenient online system</p>
@@ -196,70 +216,43 @@
     <section class="meet-doctor">
         <div class="container">
             <div class="section-header">
-                <h2>Meet your Doctor</h2>
+                <h2>Meet our Doctors</h2>
                 <p>Experienced dental professionals dedicated to your oral health</p>
             </div>
-            <div class="doctor-card">
-                <div class="doctor-icon">
-                    <i class="fas fa-user-md"></i>
-                </div>
-                <h3>Dr. Juan Dela Cruz</h3>
-                <div class="doctor-specialties">
-                    <span>General Dentistry</span>
-                    <span>Orthodontics</span>
-                    <span>Oral Surgery</span>
-                </div>
-                <div class="doctor-experience">
-                    <i class="fas fa-star"></i>
-                    <span>10 years experience</span>
+            <div id="doctors-grid" class="doctors-grid">
+                <!-- Dentists will be populated by JavaScript -->
+                <div class="doctor-card">
+                    <div class="doctor-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h3>Dr. Juan Dela Cruz</h3>
+                    <div class="doctor-specialties">
+                        <span>General Dentistry</span>
+                        <span>Orthodontics</span>
+                        <span>Oral Surgery</span>
+                    </div>
+                    <div class="doctor-experience">
+                        <i class="fas fa-star"></i>
+                        <span>Available</span>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Visit our Clinic & Ready to Schedule Section -->
+    <!-- Ready to Schedule Section -->
     <section class="clinic-schedule">
         <div class="container">
-            <div class="clinic-schedule-grid">
-                <div class="clinic-info">
-                    <h3>Visit our Clinic</h3>
-                    <p>Conveniently located in Laoag City, Ilocos Norte. Easy to reach with ample parking available.</p>
-                    <div class="clinic-details">
-                        <div class="detail-item">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>123 Rizal Street, Laoag City, Ilocos Norte 2900</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-phone"></i>
-                            <span>09456661234</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-envelope"></i>
-                            <span>info@toothtrack.ph</span>
-                        </div>
-                        <div class="detail-item">
-                            <i class="fas fa-clock"></i>
-                            <div class="hours">
-                                <span>Monday - Friday: 8:00 AM - 6:00 PM</span>
-                                <span>Saturday: 8:00 AM - 4:00 PM</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="schedule-card-centered">
                 <div class="schedule-card">
                     <h3>Ready to Schedule?</h3>
-                    <p>Book your appointment online or call us directly</p>
+                    <p>Book your appointment online</p>
                     <div class="schedule-buttons">
                         <button class="btn btn-primary btn-large">
                             <i class="fas fa-calendar"></i>
                             Book An Online Appointment
                         </button>
-                        <button class="btn btn-outline btn-large">
-                            <i class="fas fa-phone"></i>
-                            Call (+63) 9123-456-7891
-                        </button>
                     </div>
-                    <p class="emergency-note">Emergency cases are seen immediately</p>
                 </div>
             </div>
         </div>
@@ -293,10 +286,10 @@
                     <div class="footer-section">
                         <h4>Contact</h4>
                         <ul>
-                            <li><a href="#">123 Rizal Street</a></li>
+                            <li><a href="#">69 Bayabas Street</a></li>
                             <li><a href="#">Laoag City, Ilocos Norte</a></li>
-                            <li><a href="#">(077) 123-4567</a></li>
-                            <li><a href="#">info@toothtrack.ph</a></li>
+                            <li><a href="#">(+63) 966-549-4955</a></li>
+                            <li><a href="#">pogiboy.problems@gmail.com</a></li>
                         </ul>
                     </div>
                 </div>
@@ -307,6 +300,235 @@
         </div>
     </footer>
 
-    <script src="homepage-script.js"></script>
+    <script>
+        // Define placeholder functions immediately
+        // These will be replaced by the real functions when homepage-script.js loads
+        window.showLoginModal = window.showLoginModal || function() {
+            console.error('showLoginModal called but not properly defined');
+            console.trace('Stack trace:');
+            alert('Login feature is initializing. Please wait a moment and try again.');
+        };
+        
+        window.showRegisterModal = window.showRegisterModal || function() {
+            console.error('showRegisterModal called but not properly defined');
+            console.trace('Stack trace:');
+            alert('Register feature is initializing. Please wait a moment and try again.');
+        };
+        
+        console.log('Placeholder functions defined');
+        console.log('showLoginModal type:', typeof window.showLoginModal);
+        console.log('showRegisterModal type:', typeof window.showRegisterModal);
+    </script>
+    <script>
+        // Wrap script loading in try-catch to catch any errors
+        console.log('=== LOADING SCRIPTS ===');
+    </script>
+    <script src="data-manager.js" onerror="console.error('❌ Failed to load data-manager.js'); alert('Failed to load data-manager.js')"></script>
+    <script src="utils.js" onerror="console.error('❌ Failed to load utils.js'); alert('Failed to load utils.js')"></script>
+    <script src="validation-manager.js" onerror="console.error('❌ Failed to load validation-manager.js'); alert('Failed to load validation-manager.js')"></script>
+    <script>
+        // Test if script will load
+        console.log('About to load homepage-script.js...');
+    </script>
+    <script src="homepage-script.js" onerror="console.error('❌ CRITICAL: Failed to load homepage-script.js'); alert('CRITICAL: Failed to load homepage-script.js - Check Network tab!')"></script>
+    <script>
+        // Immediate check after script tag
+        console.log('Script tag processed. Checking functions...');
+        console.log('showLoginModal immediately after script:', typeof window.showLoginModal);
+        console.log('showRegisterModal immediately after script:', typeof window.showRegisterModal);
+    </script>
+    <script>
+        console.log('=== SCRIPTS LOADED (checking for errors above) ===');
+        console.log('Checking if homepage-script.js loaded...');
+        
+        // Check if we see the expected log from homepage-script.js
+        // If not, the script didn't load or had an error
+        setTimeout(function() {
+            console.log('=== POST-LOAD CHECK ===');
+            console.log('showLoginModal type:', typeof window.showLoginModal);
+            console.log('showRegisterModal type:', typeof window.showRegisterModal);
+            
+            // If functions are still placeholders, homepage-script.js didn't load
+            if (window.showLoginModal && window.showLoginModal.toString().includes('initializing')) {
+                console.error('❌ CRITICAL: homepage-script.js did NOT load or had an error!');
+                console.error('The functions are still placeholders.');
+                console.error('Check the Network tab to see if homepage-script.js loaded (status 200)');
+                console.error('Check for JavaScript syntax errors above this message');
+            }
+        }, 500);
+    </script>
+    <script>
+        // Verify functions after all scripts load
+        console.log('=== AFTER ALL SCRIPTS LOADED ===');
+        console.log('showLoginModal type:', typeof window.showLoginModal);
+        console.log('showRegisterModal type:', typeof window.showRegisterModal);
+        console.log('showLoginModal function:', window.showLoginModal);
+        console.log('showRegisterModal function:', window.showRegisterModal);
+        
+        // Check if functions were replaced (not the placeholder)
+        const isPlaceholder = window.showLoginModal.toString().includes('initializing');
+        console.log('showLoginModal is placeholder:', isPlaceholder);
+        
+        if (typeof window.showLoginModal !== 'function') {
+            console.error('❌ CRITICAL: showLoginModal is NOT a function after scripts loaded!');
+            console.error('Type is:', typeof window.showLoginModal);
+        } else if (isPlaceholder) {
+            console.error('❌ CRITICAL: showLoginModal is still the placeholder function!');
+            console.error('homepage-script.js may not have loaded or had an error');
+        } else {
+            console.log('✅ showLoginModal is properly defined and replaced placeholder');
+        }
+        
+        const isRegisterPlaceholder = window.showRegisterModal.toString().includes('initializing');
+        if (typeof window.showRegisterModal !== 'function') {
+            console.error('❌ CRITICAL: showRegisterModal is NOT a function after scripts loaded!');
+        } else if (isRegisterPlaceholder) {
+            console.error('❌ CRITICAL: showRegisterModal is still the placeholder function!');
+        } else {
+            console.log('✅ showRegisterModal is properly defined and replaced placeholder');
+        }
+        
+        // Try to manually call the function to test
+        if (typeof window.showLoginModal === 'function' && !isPlaceholder) {
+            console.log('✅ Functions are ready! Buttons should work now.');
+        } else {
+            console.error('❌ Functions are NOT ready. Check for JavaScript errors above.');
+        }
+    </script>
+    
+    <!-- IMMEDIATE TEST SCRIPT -->
+    <script>
+        console.log('=== INLINE TEST SCRIPT RUNNING ===');
+        
+        // Test immediately
+        (function() {
+            console.log('Testing button availability...');
+            
+            function testButtons() {
+                const loginBtn = document.getElementById('login-btn');
+                const registerBtn = document.getElementById('register-btn');
+                
+                console.log('Login button:', loginBtn);
+                console.log('Register button:', registerBtn);
+                
+                if (loginBtn) {
+                    console.log('Login button found!');
+                    console.log('Login button disabled:', loginBtn.disabled);
+                    console.log('Login button onclick:', loginBtn.onclick);
+                    console.log('Login button computed pointer-events:', window.getComputedStyle(loginBtn).pointerEvents);
+                    
+                    // Force enable
+                    loginBtn.disabled = false;
+                    loginBtn.style.pointerEvents = 'auto';
+                    loginBtn.style.cursor = 'pointer';
+                    loginBtn.style.zIndex = '9999';
+                    loginBtn.style.position = 'relative';
+                    
+                    // Add click event listener
+                    loginBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('=== LOGIN BUTTON CLICKED ===');
+                        console.log('Checking showLoginModal:', typeof window.showLoginModal);
+                        
+                        // Wait a bit if function not available yet
+                        if (typeof window.showLoginModal !== 'function') {
+                            console.log('Function not available, waiting 100ms...');
+                            setTimeout(function() {
+                                if (typeof window.showLoginModal === 'function') {
+                                    console.log('Function now available, calling...');
+                                    window.showLoginModal();
+                                } else {
+                                    console.error('showLoginModal still not available after wait');
+                                    alert('Login feature is not available. Please refresh the page.');
+                                }
+                            }, 100);
+                        } else {
+                            console.log('Calling showLoginModal...');
+                            window.showLoginModal();
+                        }
+                        return false;
+                    }, true);
+                    
+                    // Also add as onclick backup
+                    loginBtn.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Login onclick handler triggered');
+                        if (typeof window.showLoginModal === 'function') {
+                            window.showLoginModal();
+                        }
+                        return false;
+                    };
+                } else {
+                    console.error('Login button NOT FOUND!');
+                }
+                
+                if (registerBtn) {
+                    console.log('Register button found!');
+                    console.log('Register button disabled:', registerBtn.disabled);
+                    console.log('Register button onclick:', registerBtn.onclick);
+                    console.log('Register button computed pointer-events:', window.getComputedStyle(registerBtn).pointerEvents);
+                    
+                    // Force enable
+                    registerBtn.disabled = false;
+                    registerBtn.style.pointerEvents = 'auto';
+                    registerBtn.style.cursor = 'pointer';
+                    registerBtn.style.zIndex = '9999';
+                    registerBtn.style.position = 'relative';
+                    
+                    // Add click event listener
+                    registerBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('=== REGISTER BUTTON CLICKED ===');
+                        console.log('Checking showRegisterModal:', typeof window.showRegisterModal);
+                        
+                        // Wait a bit if function not available yet
+                        if (typeof window.showRegisterModal !== 'function') {
+                            console.log('Function not available, waiting 100ms...');
+                            setTimeout(function() {
+                                if (typeof window.showRegisterModal === 'function') {
+                                    console.log('Function now available, calling...');
+                                    window.showRegisterModal();
+                                } else {
+                                    console.error('showRegisterModal still not available after wait');
+                                    alert('Register feature is not available. Please refresh the page.');
+                                }
+                            }, 100);
+                        } else {
+                            console.log('Calling showRegisterModal...');
+                            window.showRegisterModal();
+                        }
+                        return false;
+                    }, true);
+                    
+                    // Also add as onclick backup
+                    registerBtn.onclick = function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Register onclick handler triggered');
+                        if (typeof window.showRegisterModal === 'function') {
+                            window.showRegisterModal();
+                        }
+                        return false;
+                    };
+                } else {
+                    console.error('Register button NOT FOUND!');
+                }
+            }
+            
+            // Try multiple times
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', testButtons);
+            } else {
+                testButtons();
+            }
+            
+            setTimeout(testButtons, 100);
+            setTimeout(testButtons, 500);
+            setTimeout(testButtons, 1000);
+        })();
+    </script>
 </body>
 </html>

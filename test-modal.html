@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modal Test</title>
+</head>
+<body>
+    <h1>Modal Test</h1>
+    <button id="test-login">Test Login Modal</button>
+    <button id="test-register">Test Register Modal</button>
+    
+    <script>
+        // Simple test to see if functions are available
+        console.log('Testing modal functions...');
+        console.log('window.showLoginModal:', typeof window.showLoginModal);
+        console.log('window.showRegisterModal:', typeof window.showRegisterModal);
+        
+        document.getElementById('test-login').addEventListener('click', function() {
+            console.log('Test login clicked');
+            if (typeof window.showLoginModal === 'function') {
+                window.showLoginModal();
+            } else {
+                alert('showLoginModal not available');
+            }
+        });
+        
+        document.getElementById('test-register').addEventListener('click', function() {
+            console.log('Test register clicked');
+            if (typeof window.showRegisterModal === 'function') {
+                window.showRegisterModal();
+            } else {
+                alert('showRegisterModal not available');
+            }
+        });
+    </script>
+    
+    <script src="data-manager.js"></script>
+    <script src="utils.js"></script>
+    <script src="validation-manager.js"></script>
+    <script src="homepage-script.js"></script>
+</body>
+</html>
+

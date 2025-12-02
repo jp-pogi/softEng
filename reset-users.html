@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Users - ToothTrack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #2563EB;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1D4ED8;
+        }
+        .info {
+            background: #F3F4F6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #D1FAE5;
+            color: #065F46;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #FEE2E2;
+            color: #991B1B;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>ToothTrack - Reset Users</h1>
+    
+    <div class="info">
+        <h3>Current Users in Database:</h3>
+        <div id="current-users"></div>
+    </div>
+    
+    <div>
+        <button onclick="checkUsers()">Check Current Users</button>
+        <button onclick="resetUsers()">Reset to Default Users</button>
+        <button onclick="testLogin()">Test Dentist Login</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <div class="info">
+        <h3>Default Login Credentials:</h3>
+        <ul>
+            <li><strong>Admin:</strong> admin@toothtrack.ph / password123</li>
+            <li><strong>Dentist:</strong> dentist@toothtrack.ph / password123</li>
+            <li><strong>Patient:</strong> patient@toothtrack.ph / password123</li>
+        </ul>
+    </div>
+    
+    <script src="data-manager.js"></script>
+    <script>
+        // Wait for dataManager to initialize
+        setTimeout(() => {
+            checkUsers();
+        }, 500);
+        
+        function checkUsers() {
+            const resultDiv = document.getElementById('result');
+            const usersDiv = document.getElementById('current-users');
+            
+            if (typeof dataManager === 'undefined') {
+                resultDiv.innerHTML = '<div class="error">dataManager is not loaded. Make sure data-manager.js is accessible.</div>';
+                return;
+            }
+            
+            const users = dataManager.getUsers();
+            usersDiv.innerHTML = '<pre>' + JSON.stringify(users, null, 2) + '</pre>';
+            
+            const dentist = users.find(u => u.email === 'dentist@toothtrack.ph');
+            if (dentist) {
+                resultDiv.innerHTML = '<div class="success">✓ Dentist user found! Email: ' + dentist.email + ', Role: ' + dentist.role + '</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="error">✗ Dentist user NOT found. Click "Reset to Default Users" to restore.</div>';
+            }
+        }
+        
+        function resetUsers() {
+            if (typeof dataManager === 'undefined') {
+                alert('dataManager is not loaded!');
+                return;
+            }
+            
+            // Clear existing users
+            localStorage.removeItem('toothtrack_users');
+            
+            // Reinitialize
+            dataManager.init();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="success">✓ Users reset successfully! Default users have been restored.</div>';
+            
+            // Refresh display
+            setTimeout(() => {
+                checkUsers();
+            }, 100);
+        }
+        
+        function testLogin() {
+            if (typeof dataManager === 'undefined') {
+                alert('dataManager is not loaded!');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('result');
+            const testAuth = dataManager.authenticate('dentist@toothtrack.ph', 'password123');
+            
+            if (testAuth) {
+                resultDiv.innerHTML = '<div class="success">✓ Login test successful!<br>User: ' + testAuth.name + '<br>Email: ' + testAuth.email + '<br>Role: ' + testAuth.role + '</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="error">✗ Login test FAILED!<br>Make sure:<br>1. Email is exactly: dentist@toothtrack.ph<br>2. Password is exactly: password123<br>3. User exists in database (click "Reset to Default Users" if needed)</div>';
+            }
+        }
+    </script>
+</body>
+</html>
+

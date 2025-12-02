@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Button Test</title>
+</head>
+<body>
+    <h1>Button Test Page</h1>
+    <button id="login-btn" type="button">Login</button>
+    <button id="register-btn" type="button">Register</button>
+    
+    <script>
+        console.log('Test page loaded');
+        
+        // Test if buttons exist
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        
+        console.log('Login button:', loginBtn);
+        console.log('Register button:', registerBtn);
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function() {
+                alert('Login button clicked!');
+                console.log('Login clicked');
+            });
+            loginBtn.onclick = function() {
+                alert('Login onclick triggered!');
+            };
+        }
+        
+        if (registerBtn) {
+            registerBtn.addEventListener('click', function() {
+                alert('Register button clicked!');
+                console.log('Register clicked');
+            });
+            registerBtn.onclick = function() {
+                alert('Register onclick triggered!');
+            };
+        }
+    </script>
+</body>
+</html>
+

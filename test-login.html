@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login - ToothTrack</title>
+</head>
+<body>
+    <h1>Login Test</h1>
+    <p>Open browser console (F12) and check the output</p>
+    
+    <script src="data-manager.js"></script>
+    <script>
+        // Wait for dataManager to initialize
+        setTimeout(() => {
+            console.log('=== Testing Login ===');
+            
+            // Check if dataManager exists
+            if (typeof dataManager === 'undefined') {
+                console.error('dataManager is not defined!');
+            } else {
+                console.log('✓ dataManager is available');
+                
+                // Get all users
+                const users = dataManager.getUsers();
+                console.log('All users:', users);
+                
+                // Check for dentist user
+                const dentist = users.find(u => u.email === 'dentist@toothtrack.ph');
+                if (dentist) {
+                    console.log('✓ Dentist user found:', dentist);
+                    console.log('  Email:', dentist.email);
+                    console.log('  Password:', dentist.password);
+                    console.log('  Role:', dentist.role);
+                } else {
+                    console.error('✗ Dentist user NOT found!');
+                    console.log('Available users:', users.map(u => ({ email: u.email, role: u.role })));
+                }
+                
+                // Test authentication
+                console.log('\n=== Testing Authentication ===');
+                const testAuth = dataManager.authenticate('dentist@toothtrack.ph', 'password123');
+                if (testAuth) {
+                    console.log('✓ Authentication successful:', testAuth);
+                } else {
+                    console.error('✗ Authentication FAILED!');
+                    console.log('Trying to find user manually...');
+                    const allUsers = dataManager.getUsers();
+                    const found = allUsers.find(u => 
+                        u.email && u.email.toLowerCase() === 'dentist@toothtrack.ph'.toLowerCase()
+                    );
+                    if (found) {
+                        console.log('User found but password mismatch:', found);
+                        console.log('Expected password: password123');
+                        console.log('Actual password:', found.password);
+                    } else {
+                        console.log('User not found at all');
+                    }
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
+
