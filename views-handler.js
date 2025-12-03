@@ -2279,6 +2279,13 @@ class ViewsHandler {
                 if (user && user.role === 'patient' && typeof customizePatientProfileView === 'function') {
                     customizePatientProfileView();
                 }
+                // Hide "New Patient" button for dentists
+                if (user && user.role === 'dentist') {
+                    const addBtn = document.getElementById('add-patient-btn');
+                    if (addBtn) {
+                        addBtn.classList.add('hidden');
+                    }
+                }
                 this.loadPatients(1);
             }
         });

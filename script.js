@@ -696,12 +696,9 @@ function customizeDentistDashboard() {
     if (bookAppointmentBtn) {
         bookAppointmentBtn.classList.add('hidden');
     }
+    // Hide "New Patient" button for dentists
     if (addPatientBtn) {
-        if (rolePermissions.canPerformAction(user, 'createPatient')) {
-            addPatientBtn.classList.remove('hidden');
-        } else {
-            addPatientBtn.classList.add('hidden');
-        }
+        addPatientBtn.classList.add('hidden');
     }
     if (addRecordBtn) {
         if (rolePermissions.canPerformAction(user, 'createRecord')) {
