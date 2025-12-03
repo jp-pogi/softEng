@@ -454,15 +454,15 @@ function customizePatientView(viewId) {
 function customizePatientAppointmentsView() {
     const user = dataManager.getCurrentUser();
     if (!user || user.role !== 'patient') {
-        // For non-patients, show "New Appointment" and hide "Book Appointment"
+        // For non-patients, hide both buttons (only patients can book appointments)
         const bookAppointmentBtn = document.getElementById('book-appointment-btn');
         const addAppointmentBtn = document.getElementById('add-appointment-btn');
         if (bookAppointmentBtn) {
             bookAppointmentBtn.classList.add('hidden');
         }
-        if (addAppointmentBtn && user) {
-            // Show for admin/dentist if they have permission
-            if (rolePermissions.canPerformAction(user, 'createAppointment')) {
+        if (addAppointmentBtn) {
+            // Hide for dentists, only show for admin if they have permission
+            if (user.role === 'admin' && rolePermissions.canPerformAction(user, 'createAppointment')) {
                 addAppointmentBtn.classList.remove('hidden');
             } else {
                 addAppointmentBtn.classList.add('hidden');
@@ -689,12 +689,9 @@ function customizeDentistDashboard() {
     const addPatientBtn = document.getElementById('add-patient-btn');
     const addRecordBtn = document.getElementById('add-record-btn');
 
+    // Hide "New Appointment" button for dentists (only patients can book appointments)
     if (addAppointmentBtn) {
-        if (rolePermissions.canPerformAction(user, 'createAppointment')) {
-            addAppointmentBtn.classList.remove('hidden');
-        } else {
-            addAppointmentBtn.classList.add('hidden');
-        }
+        addAppointmentBtn.classList.add('hidden');
     }
     if (bookAppointmentBtn) {
         bookAppointmentBtn.classList.add('hidden');
