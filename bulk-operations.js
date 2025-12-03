@@ -241,6 +241,10 @@ class BulkOperationsManager {
                     // Don't change completed or cancelled appointments
                     if (appointment && appointment.status !== 'completed' && appointment.status !== 'cancelled') {
                         dataManager.updateAppointment(id, { status: 'confirmed' });
+                        // Notify patient of confirmation
+                        if (typeof viewsHandler !== 'undefined' && viewsHandler.notifyPatientOfStatusChange) {
+                            viewsHandler.notifyPatientOfStatusChange(id, 'confirmed', appointment);
+                        }
                         confirmCount++;
                     }
                 });
@@ -298,6 +302,11 @@ class BulkOperationsManager {
                         dataManager.updateAppointment(id, { status: 'cancelled' });
                         cancelCount++;
                         
+                        // Notify patient of cancellation
+                        if (typeof viewsHandler !== 'undefined' && viewsHandler.notifyPatientOfStatusChange) {
+                            viewsHandler.notifyPatientOfStatusChange(id, 'cancelled', appointment);
+                        }
+                        
                         // Notify dentist when appointment is cancelled
                         if (appointment.dentist) {
                             const dentists = dataManager.getUsers({ role: 'dentist' });
@@ -308,7 +317,7 @@ class BulkOperationsManager {
                                     userRole: 'dentist',
                                     type: 'appointment-cancelled',
                                     title: 'Appointment Cancelled',
-                                    message: `${appointment.patientName} has cancelled their appointment for ${appointment.service} on ${appointment.date} at ${appointment.time}.`,
+                                    message: `${appointment.patientName}'s appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been cancelled.`,
                                     relatedId: id,
                                     relatedType: 'appointment'
                                 });

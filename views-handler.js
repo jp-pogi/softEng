@@ -906,6 +906,48 @@ class ViewsHandler {
             allAppointments = rolePermissions.filterDataByRole(user, allAppointments, 'appointments');
         }
         
+        // Ensure appointments are sorted from latest to oldest (by date and time)
+        allAppointments = allAppointments.sort((a, b) => {
+            // Parse date and time more reliably
+            const parseDateTime = (dateStr, timeStr) => {
+                if (!dateStr) return new Date(0);
+                
+                // Date is in YYYY-MM-DD format
+                const date = dateStr.trim();
+                let time = (timeStr || '00:00').trim();
+                
+                // Convert 12-hour format to 24-hour if needed
+                if (time.includes('AM') || time.includes('PM')) {
+                    const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                    if (match) {
+                        let hours = parseInt(match[1]);
+                        const minutes = parseInt(match[2]);
+                        const period = match[3].toUpperCase();
+                        
+                        if (period === 'PM' && hours !== 12) hours += 12;
+                        if (period === 'AM' && hours === 12) hours = 0;
+                        
+                        time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    }
+                }
+                
+                // Create ISO string format: YYYY-MM-DDTHH:MM:SS
+                const dateTimeStr = `${date}T${time}:00`;
+                const parsed = new Date(dateTimeStr);
+                
+                // Fallback if parsing fails
+                if (isNaN(parsed.getTime())) {
+                    return new Date(date + ' ' + time);
+                }
+                return parsed;
+            };
+            
+            const dateTimeA = parseDateTime(a.date, a.time);
+            const dateTimeB = parseDateTime(b.date, b.time);
+            
+            return dateTimeB.getTime() - dateTimeA.getTime(); // Descending order (newest first)
+        });
+        
         // Paginate
         const paginationData = paginationManager.paginate(allAppointments, page);
         this.renderAppointmentsTable(paginationData.items);
@@ -977,6 +1019,11 @@ class ViewsHandler {
                                      dentistUser?.address || 
                                      'Address not available';
                 
+                // Get dentist's coordinates for map
+                const dentistLat = dentistUser?.latitude || dentistUser?.clinicSettings?.latitude;
+                const dentistLng = dentistUser?.longitude || dentistUser?.clinicSettings?.longitude;
+                const hasLocation = dentistLat && dentistLng;
+                
                 // Create dentist display with profile picture
                 const dentistDisplay = dentistProfilePicture 
                     ? `<div style="display: flex; align-items: center; gap: 8px;">
@@ -1015,8 +1062,21 @@ class ViewsHandler {
                     </td>
                     <td>${apt.service || 'N/A'}</td>
                     <td>
-                        <i class="fas fa-map-marker-alt" style="color: #2563EB; margin-right: 6px;"></i>
+                        ${hasLocation ? `
+                        <span class="location-link" 
+                              style="cursor: pointer; color: #2563EB; text-decoration: underline;" 
+                              data-dentist-name="${(dentistName || '').replace(/"/g, '&quot;')}"
+                              data-latitude="${dentistLat}"
+                              data-longitude="${dentistLng}"
+                              data-address="${(clinicLocation || '').replace(/"/g, '&quot;')}"
+                              title="Click to view location on map">
+                            <i class="fas fa-map-marker-alt" style="color: #2563EB; margin-right: 6px;"></i>
+                            ${clinicLocation}
+                        </span>
+                        ` : `
+                        <i class="fas fa-map-marker-alt" style="color: #6B7280; margin-right: 6px;"></i>
                         ${clinicLocation}
+                        `}
                     </td>
                     <td>${dentistDisplay}</td>
                     <td><span class="status-badge ${apt.status || 'pending'}">${(apt.status || 'pending').charAt(0).toUpperCase() + (apt.status || 'pending').slice(1)}</span></td>
@@ -1024,6 +1084,26 @@ class ViewsHandler {
                 </tr>
                 `;
             }).join('');
+            
+            // Add event delegation for location links
+            setTimeout(() => {
+                const locationLinks = tbody.querySelectorAll('.location-link');
+                locationLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const dentistName = link.getAttribute('data-dentist-name');
+                        const latitude = parseFloat(link.getAttribute('data-latitude'));
+                        const longitude = parseFloat(link.getAttribute('data-longitude'));
+                        const address = link.getAttribute('data-address');
+                        
+                        if (latitude && longitude && !isNaN(latitude) && !isNaN(longitude)) {
+                            this.showDentistLocationMap(dentistName, latitude, longitude, address);
+                        } else {
+                            showNotification('Location coordinates are not available', 'error');
+                        }
+                    });
+                });
+            }, 100);
         } else {
             // Staff/Dentist/Admin view - full table
             const showPatientColumn = true;
@@ -1035,9 +1115,9 @@ class ViewsHandler {
             }
 
             tbody.innerHTML = appointments.map(apt => {
-                const canEdit = rolePermissions.canPerformAction(user, 'editAppointment', apt);
+                const canEdit = rolePermissions.canPerformAction(user, 'editAppointment', apt) && apt.status !== 'cancelled' && apt.status !== 'completed';
                 const canDelete = rolePermissions.canPerformAction(user, 'deleteAppointment', apt);
-                const canUpdateStatus = rolePermissions.canPerformAction(user, 'manageAppointmentStatus', apt);
+                const canUpdateStatus = rolePermissions.canPerformAction(user, 'manageAppointmentStatus', apt) && apt.status !== 'cancelled' && apt.status !== 'completed';
                 
                 const notesDisplay = apt.notes ? 
                     `<div style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${apt.notes.replace(/"/g, '&quot;')}">
@@ -1436,7 +1516,7 @@ class ViewsHandler {
                 </div>
                 <div class="form-group">
                     <label>Status</label>
-                    <select name="status" ${appointment.status === 'completed' ? 'disabled' : ''}>
+                    <select name="status" ${appointment.status === 'completed' || appointment.status === 'cancelled' ? 'disabled' : ''}>
                         ${appointment.status === 'pending' ? `
                         <option value="pending" selected>Pending</option>
                         <option value="confirmed">Confirmed</option>
@@ -1458,6 +1538,11 @@ class ViewsHandler {
                         <option value="confirmed" disabled>Confirmed</option>
                         <option value="completed" selected>Completed</option>
                         <option value="cancelled" disabled>Cancelled</option>
+                        ` : appointment.status === 'cancelled' ? `
+                        <option value="pending" disabled>Pending</option>
+                        <option value="confirmed" disabled>Confirmed</option>
+                        <option value="completed" disabled>Completed</option>
+                        <option value="cancelled" selected>Cancelled</option>
                         ` : `
                         <option value="pending" ${appointment.status === 'pending' ? 'selected' : ''}>Pending</option>
                         <option value="confirmed" ${appointment.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
@@ -1466,7 +1551,9 @@ class ViewsHandler {
                         `}
                     </select>
                     ${appointment.status === 'completed' ? '<input type="hidden" name="status" value="completed">' : ''}
+                    ${appointment.status === 'cancelled' ? '<input type="hidden" name="status" value="cancelled">' : ''}
                     ${appointment.status === 'completed' ? '<small style="color: #6B7280; display: block; margin-top: 4px;">Completed appointments cannot be changed. Status is final.</small>' : ''}
+                    ${appointment.status === 'cancelled' ? '<small style="color: #6B7280; display: block; margin-top: 4px;">Cancelled appointments cannot be changed. Status is final.</small>' : ''}
                     ${appointment.status === 'confirmed' ? '<small style="color: #6B7280; display: block; margin-top: 4px;">Cannot change back to pending. Status can only progress forward.</small>' : ''}
                 </div>
                 ${appointment.notes ? `
@@ -1507,9 +1594,14 @@ class ViewsHandler {
                             return false;
                         }
                         
-                        // Prevent editing completed appointments
+                        // Prevent editing completed or cancelled appointments
                         if (appointment.status === 'completed') {
                             showNotification('Completed appointments cannot be edited. They are final.', 'error');
+                            return false;
+                        }
+                        
+                        if (appointment.status === 'cancelled') {
+                            showNotification('Cancelled appointments cannot be edited. They are final.', 'error');
                             return false;
                         }
                         
@@ -1525,6 +1617,12 @@ class ViewsHandler {
                                     showNotification('No changes made', 'info');
                                     return true; // Close modal
                                 }
+                                return false;
+                            }
+                            
+                            // Prevent changing from cancelled to any other status
+                            if (appointment.status === 'cancelled' && newStatus !== 'cancelled') {
+                                showNotification('Cancelled appointments cannot be changed to other statuses.', 'error');
                                 return false;
                             }
                             
@@ -1545,6 +1643,8 @@ class ViewsHandler {
                                 const updated = dataManager.updateAppointment(id, { status: newStatus });
                                 if (updated) {
                                     showNotification('Appointment status updated successfully', 'success');
+                                    // Notify patient of status change - use updated appointment object
+                                    this.notifyPatientOfStatusChange(id, newStatus, updated);
                                     this.loadAppointments(1);
                                     this.loadDashboardData();
                                     this.loadSchedule();
@@ -1578,12 +1678,18 @@ class ViewsHandler {
                             return true; // Allow modal to close
                         }
                         
+                        // Prevent changing cancelled appointments
+                        if (appointment.status === 'cancelled' && updates.status !== 'cancelled') {
+                            showNotification('Cancelled appointments cannot be changed to other statuses. They are final.', 'error');
+                            return false;
+                        }
+                        
                         // Prevent backward status changes
                         const statusOrder = ['pending', 'confirmed', 'completed', 'cancelled'];
                         const currentStatusIndex = statusOrder.indexOf(appointment.status);
                         const newStatusIndex = statusOrder.indexOf(updates.status);
                         
-                        // Only allow forward progression (except cancelled can be set from any status)
+                        // Only allow forward progression (except cancelled can be set from any status, but once cancelled, cannot be changed)
                         if (updates.status !== 'cancelled' && newStatusIndex < currentStatusIndex) {
                             showNotification('Cannot change status backwards. Status can only progress forward (pending → confirmed → completed).', 'error');
                             return false;
@@ -1598,63 +1704,9 @@ class ViewsHandler {
                     if (result) {
                         showNotification('Appointment updated successfully', 'success');
                         
-                        // Create notification for patient if status changed
-                        if (updates.status && updates.status !== appointment.status && appointment.patientId) {
-                            const patientUser = dataManager.getUser(appointment.patientId);
-                            if (patientUser) {
-                                let title = 'Appointment Status Updated';
-                                let message = '';
-                                
-                                if (updates.status === 'confirmed') {
-                                    title = 'Appointment Confirmed';
-                                    message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been confirmed.`;
-                                } else if (updates.status === 'cancelled') {
-                                    title = 'Appointment Cancelled';
-                                    message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been cancelled.`;
-                                    
-                                    // Notify dentist when appointment is cancelled
-                                    if (appointment.dentist) {
-                                        const dentists = dataManager.getUsers({ role: 'dentist' });
-                                        const dentist = dentists.find(d => d.name === appointment.dentist);
-                                        if (dentist) {
-                                            dataManager.createNotification({
-                                                userId: dentist.id,
-                                                userRole: 'dentist',
-                                                type: 'appointment-cancelled',
-                                                title: 'Appointment Cancelled',
-                                                message: `${appointment.patientName} has cancelled their appointment for ${appointment.service} on ${appointment.date} at ${appointment.time}.`,
-                                                relatedId: id,
-                                                relatedType: 'appointment'
-                                            });
-                                            
-                                            // Update notification badge
-                                            if (typeof updateNotificationBadge === 'function') {
-                                                updateNotificationBadge();
-                                            }
-                                        }
-                                    }
-                                } else if (updates.status === 'completed') {
-                                    title = 'Appointment Completed';
-                                    message = `Your appointment for ${appointment.service} on ${appointment.date} has been completed. Check your records for details.`;
-                                } else {
-                                    message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} status has been updated to ${updates.status}.`;
-                                }
-                                
-                                dataManager.createNotification({
-                                    userId: patientUser.id,
-                                    userRole: 'patient',
-                                    type: `appointment-${updates.status}`,
-                                    title: title,
-                                    message: message,
-                                    relatedId: id,
-                                    relatedType: 'appointment'
-                                });
-                                
-                                // Update notification badge
-                                if (typeof updateNotificationBadge === 'function') {
-                                    updateNotificationBadge();
-                                }
-                            }
+                        // Notify patient if status changed - use updated appointment object
+                        if (updates.status && updates.status !== appointment.status) {
+                            this.notifyPatientOfStatusChange(id, updates.status, result);
                         }
                         
                         this.loadAppointments(1);
@@ -1677,6 +1729,103 @@ class ViewsHandler {
         ]);
     }
 
+    /**
+     * Helper function to notify patient when appointment status changes
+     * @param {string} appointmentId - The appointment ID
+     * @param {string} newStatus - The new status (confirmed, cancelled, completed, etc.)
+     * @param {Object} appointment - The appointment object (optional, will fetch if not provided)
+     */
+    notifyPatientOfStatusChange(appointmentId, newStatus, appointment = null) {
+        if (!appointment) {
+            appointment = dataManager.getAppointment(appointmentId);
+        }
+        if (!appointment) return;
+
+        // Try to find patient user by ID first, then by email
+        let patientUser = null;
+        if (appointment.patientId) {
+            patientUser = dataManager.getUser(appointment.patientId);
+        }
+        
+        // If not found by ID, try to find by email
+        if (!patientUser && appointment.email) {
+            patientUser = dataManager.getUserByEmail(appointment.email);
+        }
+        
+        // If still not found, we can't send a notification
+        if (!patientUser) {
+            console.warn('Could not find patient user for appointment notification:', {
+                appointmentId,
+                patientId: appointment.patientId,
+                email: appointment.email,
+                patientName: appointment.patientName
+            });
+            return;
+        }
+        
+        // Debug logging
+        console.log('Sending notification to patient:', {
+            patientId: patientUser.id,
+            patientEmail: patientUser.email,
+            appointmentId,
+            newStatus,
+            appointmentService: appointment.service,
+            appointmentDate: appointment.date
+        });
+
+        let title = 'Appointment Status Updated';
+        let message = '';
+        
+        if (newStatus === 'confirmed') {
+            title = 'Appointment Confirmed';
+            message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been confirmed.`;
+        } else if (newStatus === 'cancelled') {
+            title = 'Appointment Cancelled';
+            message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been cancelled.`;
+            
+            // Notify dentist when appointment is cancelled by admin/dentist
+            // (Patient cancellations are handled in patient-portal.js)
+            const user = dataManager.getCurrentUser();
+            if (user && user.role !== 'patient' && appointment.dentist) {
+                const dentists = dataManager.getUsers({ role: 'dentist' });
+                const dentist = dentists.find(d => d.name === appointment.dentist);
+                if (dentist) {
+                    dataManager.createNotification({
+                        userId: dentist.id,
+                        userRole: 'dentist',
+                        type: 'appointment-cancelled',
+                        title: 'Appointment Cancelled',
+                        message: `${appointment.patientName}'s appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been cancelled.`,
+                        relatedId: appointmentId,
+                        relatedType: 'appointment'
+                    });
+                }
+            }
+        } else if (newStatus === 'completed') {
+            title = 'Appointment Completed';
+            message = `Your appointment for ${appointment.service} on ${appointment.date} has been completed. Check your records for details.`;
+        } else {
+            message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} status has been updated to ${newStatus}.`;
+        }
+        
+        const notification = dataManager.createNotification({
+            userId: patientUser.id,
+            userRole: patientUser.role || 'patient',
+            type: `appointment-${newStatus}`,
+            title: title,
+            message: message,
+            relatedId: appointmentId,
+            relatedType: 'appointment'
+        });
+        
+        console.log('Notification created:', notification);
+        
+        // Update notification badge
+        if (typeof updateNotificationBadge === 'function') {
+            updateNotificationBadge();
+        }
+    }
+
     updateAppointmentStatus(id) {
         const appointment = dataManager.getAppointment(id);
         if (!appointment) return;
@@ -1688,6 +1837,12 @@ class ViewsHandler {
             showNotification('You cannot update appointment status. You can only cancel pending appointments.', 'error');
             return;
         }
+        
+        // Prevent changing cancelled appointments
+        if (appointment.status === 'cancelled') {
+            showNotification('Cancelled appointments cannot be changed. They are final.', 'error');
+            return;
+        }
 
         const statuses = ['pending', 'confirmed', 'in-progress', 'completed', 'cancelled'];
         const currentIndex = statuses.indexOf(appointment.status);
@@ -1697,64 +1852,8 @@ class ViewsHandler {
         if (result) {
             showNotification(`Appointment status updated to ${nextStatus}`, 'success');
             
-            // Create notification for patient when status changes
-            if (appointment.patientId) {
-                const patientUser = dataManager.getUser(appointment.patientId);
-                if (patientUser) {
-                    let title = 'Appointment Status Updated';
-                    let message = '';
-                    
-                    if (nextStatus === 'confirmed') {
-                        title = 'Appointment Confirmed';
-                        message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been confirmed.`;
-                    } else if (nextStatus === 'cancelled') {
-                        title = 'Appointment Cancelled';
-                        message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} has been cancelled.`;
-                        
-                        // Notify dentist when appointment is cancelled
-                        if (appointment.dentist) {
-                            const dentists = dataManager.getUsers({ role: 'dentist' });
-                            const dentist = dentists.find(d => d.name === appointment.dentist);
-                            if (dentist) {
-                                dataManager.createNotification({
-                                    userId: dentist.id,
-                                    userRole: 'dentist',
-                                    type: 'appointment-cancelled',
-                                    title: 'Appointment Cancelled',
-                                    message: `${appointment.patientName} has cancelled their appointment for ${appointment.service} on ${appointment.date} at ${appointment.time}.`,
-                                    relatedId: id,
-                                    relatedType: 'appointment'
-                                });
-                                
-                                // Update notification badge
-                                if (typeof updateNotificationBadge === 'function') {
-                                    updateNotificationBadge();
-                                }
-                            }
-                        }
-                    } else if (nextStatus === 'completed') {
-                        title = 'Appointment Completed';
-                        message = `Your appointment for ${appointment.service} on ${appointment.date} has been completed. Check your records for details.`;
-                    } else {
-                        message = `Your appointment for ${appointment.service} on ${appointment.date} at ${appointment.time} status has been updated to ${nextStatus}.`;
-                    }
-                    
-                    dataManager.createNotification({
-                        userId: patientUser.id,
-                        userRole: 'patient',
-                        type: `appointment-${nextStatus}`,
-                        title: title,
-                        message: message,
-                        relatedId: id,
-                        relatedType: 'appointment'
-                    });
-                }
-            }
-            
-            // Update notification badge
-            if (typeof updateNotificationBadge === 'function') {
-                updateNotificationBadge();
-            }
+            // Notify patient of status change - use updated appointment object
+            this.notifyPatientOfStatusChange(id, nextStatus, result);
             
             this.loadAppointments(1);
         } else {
@@ -1867,6 +1966,9 @@ class ViewsHandler {
                     showNotification('Failed to update appointment status', 'error');
                     return;
                 }
+                
+                // Notify patient that appointment is completed
+                this.notifyPatientOfStatusChange(appointmentId, 'completed', appointment);
                 
                 // Immediately refresh dashboard and schedule after status update
                 // This ensures the UI updates right away
@@ -2767,6 +2869,45 @@ class ViewsHandler {
             allRecords = rolePermissions.filterDataByRole(user, allRecords, 'records');
         }
         
+        // Sort by date (latest to oldest) - ensure sorting after filtering
+        // Use date + time if available, otherwise use createdAt
+        allRecords = allRecords.sort((a, b) => {
+            // Try to create a date from date + time, or use createdAt
+            let dateA, dateB;
+            
+            if (a.date) {
+                // If time is available, combine date and time
+                if (a.time) {
+                    dateA = new Date(`${a.date}T${a.time}`);
+                } else {
+                    dateA = new Date(a.date);
+                }
+            } else if (a.createdAt) {
+                dateA = new Date(a.createdAt);
+            } else {
+                dateA = new Date(0); // Fallback to epoch
+            }
+            
+            if (b.date) {
+                // If time is available, combine date and time
+                if (b.time) {
+                    dateB = new Date(`${b.date}T${b.time}`);
+                } else {
+                    dateB = new Date(b.date);
+                }
+            } else if (b.createdAt) {
+                dateB = new Date(b.createdAt);
+            } else {
+                dateB = new Date(0); // Fallback to epoch
+            }
+            
+            // Handle invalid dates
+            if (isNaN(dateA.getTime())) dateA = new Date(0);
+            if (isNaN(dateB.getTime())) dateB = new Date(0);
+            
+            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
+        });
+        
         // Paginate
         const paginationData = paginationManager.paginate(allRecords, page);
         this.renderRecords(paginationData.items);
@@ -3318,9 +3459,150 @@ class ViewsHandler {
         });
     }
 
+    // Show dentist location on map (for patients)
+    showDentistLocationMap(dentistName, latitude, longitude, address) {
+        // Check if Leaflet is available
+        if (typeof L === 'undefined') {
+            showNotification('Map feature is not available. Please refresh the page.', 'error');
+            return;
+        }
+        
+        // Validate coordinates
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+            showNotification('Invalid location coordinates. Please contact the clinic.', 'error');
+            return;
+        }
+        
+        // Validate coordinate ranges
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            showNotification('Invalid location coordinates. Please contact the clinic.', 'error');
+            return;
+        }
+        
+        // Use a unique ID for each map instance to avoid conflicts
+        const mapId = 'dentist-location-map-view-' + Date.now();
+        
+        const content = `
+            <div style="margin-bottom: 16px;">
+                <p><strong>Dentist:</strong> ${dentistName}</p>
+                <p><strong>Address:</strong> ${address}</p>
+            </div>
+            <div id="${mapId}" style="height: 400px; width: 100%; border-radius: 8px; border: 1px solid #D1D5DB; margin-top: 12px;"></div>
+        `;
+        
+        // Clean up any existing map first
+        if (this.dentistLocationMap) {
+            try {
+                this.dentistLocationMap.remove();
+            } catch (e) {
+                // Map might already be removed, ignore error
+            }
+            this.dentistLocationMap = null;
+            this.dentistLocationMarker = null;
+        }
+        
+        
+        const modal = showModal('Clinic Location', content, [
+            {
+                label: 'Close',
+                class: 'btn-primary',
+                action: 'cancel',
+                handler: () => {
+                    this.cleanupDentistLocationMap();
+                }
+            }
+        ]);
+        
+        // Add cleanup function
+        this.cleanupDentistLocationMap = () => {
+            if (this.dentistLocationMap) {
+                this.dentistLocationMap.remove();
+                this.dentistLocationMap = null;
+                this.dentistLocationMarker = null;
+            }
+        };
+        
+        // Add event listener for modal close (clicking outside, ESC key, etc.)
+        const modalOverlay = document.querySelector('.modal-overlay');
+        if (modalOverlay) {
+            const closeHandler = () => {
+                this.cleanupDentistLocationMap();
+                modalOverlay.removeEventListener('click', closeHandler);
+            };
+            
+            // Close on overlay click (outside modal content)
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    closeHandler();
+                }
+            });
+            
+            // Close on close button
+            const closeBtn = modalOverlay.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeHandler);
+            }
+        }
+        
+        // Initialize map after modal is shown
+        setTimeout(() => {
+            const mapContainer = document.getElementById(mapId);
+            if (!mapContainer) {
+                console.error('Map container not found');
+                return;
+            }
+            
+            // Clean up our stored reference if it exists
+            if (this.dentistLocationMap) {
+                try {
+                    this.dentistLocationMap.remove();
+                } catch (e) {
+                    // Map might already be removed, ignore
+                }
+                this.dentistLocationMap = null;
+                this.dentistLocationMarker = null;
+            }
+            
+            // Create map centered on dentist's location (lat and lng already validated above)
+            // Using unique ID prevents "already initialized" errors
+            let map;
+            try {
+                map = L.map(mapId).setView([lat, lng], 15);
+                
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(map);
+                
+                // Add marker at dentist's location
+                const marker = L.marker([lat, lng]).addTo(map);
+                
+                // Add popup with address
+                marker.bindPopup(`
+                    <strong>${dentistName}</strong><br>
+                    ${address}
+                `).openPopup();
+                
+                // Store map reference for cleanup
+                this.dentistLocationMap = map;
+                this.dentistLocationMarker = marker;
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                showNotification('Failed to load map. Please try again.', 'error');
+            }
+        }, 100);
+    }
+
     // Settings View
     initSettings() {
         this.loadSettings();
+        
+        // Initialize map for clinic location (only for dentists)
+        this.initClinicLocationMap();
         
         // Setup tabs with a small delay to ensure DOM is ready
         setTimeout(() => {
@@ -3439,11 +3721,27 @@ class ViewsHandler {
                     delete settings['saturday-end'];
                 }
                 
+                // Save latitude and longitude if available
+                const latInput = clinicForm.querySelector('[name="latitude"]');
+                const lngInput = clinicForm.querySelector('[name="longitude"]');
+                if (latInput && latInput.value) {
+                    settings.latitude = latInput.value;
+                }
+                if (lngInput && lngInput.value) {
+                    settings.longitude = lngInput.value;
+                }
+                
                 // Pass user to updateSettings so it knows to update per-dentist settings
                 dataManager.updateSettings(settings, user);
                 showNotification('Clinic settings saved', 'success');
                 // Reload settings to reflect changes
                 this.loadSettings();
+                // Reinitialize map to show updated location
+                if (user.role === 'dentist') {
+                    setTimeout(() => {
+                        this.initClinicLocationMap();
+                    }, 100);
+                }
                 // Update sidebar clinic info for dentists
                 if (user.role === 'dentist') {
                     // Refresh user object to get updated clinic info
@@ -3665,6 +3963,77 @@ class ViewsHandler {
         }
     }
 
+    initClinicLocationMap() {
+        const mapContainer = document.getElementById('clinic-location-map');
+        if (!mapContainer) return; // Map container doesn't exist (not a dentist or settings not loaded)
+        
+        // Check if Leaflet is available
+        if (typeof L === 'undefined') {
+            console.warn('Leaflet library not loaded');
+            return;
+        }
+        
+        // Destroy existing map if it exists
+        if (this.clinicMap) {
+            this.clinicMap.remove();
+            this.clinicMap = null;
+            this.clinicMarker = null;
+        }
+        
+        // Initialize map - default to Philippines (Laoag City)
+        const defaultLat = 18.1980;
+        const defaultLng = 120.5900;
+        
+        // Get existing location from settings
+        const currentUser = dataManager.getCurrentUser();
+        const settings = dataManager.getSettings(currentUser);
+        let initialLat = defaultLat;
+        let initialLng = defaultLng;
+        
+        if (settings && settings.latitude && settings.longitude) {
+            initialLat = parseFloat(settings.latitude);
+            initialLng = parseFloat(settings.longitude);
+        }
+        
+        // Create map
+        const map = L.map('clinic-location-map').setView([initialLat, initialLng], 13);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Create marker
+        let marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
+        
+        // Function to update coordinates only (no address autofill)
+        const updateCoordinates = (lat, lng) => {
+            const latInput = document.getElementById('clinic-latitude');
+            const lngInput = document.getElementById('clinic-longitude');
+            if (latInput) latInput.value = lat;
+            if (lngInput) lngInput.value = lng;
+        };
+        
+        // Update coordinates when marker is dragged
+        marker.on('dragend', function(e) {
+            const position = marker.getLatLng();
+            updateCoordinates(position.lat, position.lng);
+        });
+        
+        // Update coordinates when map is clicked
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            marker.setLatLng([lat, lng]);
+            updateCoordinates(lat, lng);
+        });
+        
+        // Store map and marker for later use
+        this.clinicMap = map;
+        this.clinicMarker = marker;
+    }
+
     loadSettings() {
         try {
             const currentUser = dataManager.getCurrentUser();
@@ -3684,6 +4053,22 @@ class ViewsHandler {
                 if (settings && settings.address) {
                     const addressInput = form.querySelector('[name="address"]');
                     if (addressInput) addressInput.value = settings.address;
+                }
+                // Load latitude and longitude
+                if (settings && settings.latitude) {
+                    const latInput = form.querySelector('[name="latitude"]');
+                    if (latInput) latInput.value = settings.latitude;
+                }
+                if (settings && settings.longitude) {
+                    const lngInput = form.querySelector('[name="longitude"]');
+                    if (lngInput) lngInput.value = settings.longitude;
+                }
+                // Update map if it exists
+                if (this.clinicMap && this.clinicMarker && settings.latitude && settings.longitude) {
+                    const lat = parseFloat(settings.latitude);
+                    const lng = parseFloat(settings.longitude);
+                    this.clinicMarker.setLatLng([lat, lng]);
+                    this.clinicMap.setView([lat, lng], 15);
                 }
                 if (settings && settings.phone) {
                     const phoneInput = form.querySelector('[name="phone"]');
@@ -4018,6 +4403,13 @@ class ViewsHandler {
             setTimeout(() => {
                 this.setupSystemRatingStars();
             }, 100);
+        }
+        
+        // If switching to clinic tab, initialize map
+        if (tabName === 'clinic') {
+            setTimeout(() => {
+                this.initClinicLocationMap();
+            }, 200);
         }
         
         // Update tab active states

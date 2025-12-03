@@ -110,10 +110,46 @@ class DataManager {
             });
         }
         
+        // Sort appointments from latest to oldest (by date and time)
         return appointments.sort((a, b) => {
-            const dateA = new Date((a.date || '') + ' ' + (a.time || ''));
-            const dateB = new Date((b.date || '') + ' ' + (b.time || ''));
-            return dateB - dateA; // Sort descending (newest first)
+            // Parse date and time more reliably
+            const parseDateTime = (dateStr, timeStr) => {
+                if (!dateStr) return new Date(0);
+                
+                // Date is in YYYY-MM-DD format
+                const date = dateStr.trim();
+                let time = (timeStr || '00:00').trim();
+                
+                // Convert 12-hour format to 24-hour if needed
+                if (time.includes('AM') || time.includes('PM')) {
+                    const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                    if (match) {
+                        let hours = parseInt(match[1]);
+                        const minutes = parseInt(match[2]);
+                        const period = match[3].toUpperCase();
+                        
+                        if (period === 'PM' && hours !== 12) hours += 12;
+                        if (period === 'AM' && hours === 12) hours = 0;
+                        
+                        time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    }
+                }
+                
+                // Create ISO string format: YYYY-MM-DDTHH:MM:SS
+                const dateTimeStr = `${date}T${time}:00`;
+                const parsed = new Date(dateTimeStr);
+                
+                // Fallback if parsing fails
+                if (isNaN(parsed.getTime())) {
+                    return new Date(date + ' ' + time);
+                }
+                return parsed;
+            };
+            
+            const dateTimeA = parseDateTime(a.date, a.time);
+            const dateTimeB = parseDateTime(b.date, b.time);
+            
+            return dateTimeB.getTime() - dateTimeA.getTime(); // Sort descending (newest first)
         });
     }
 
@@ -547,10 +583,41 @@ class DataManager {
             );
         }
         
+        // Sort by date (latest to oldest) - use date + time if available, otherwise use createdAt
         return records.sort((a, b) => {
-            const dateA = new Date(a.date || a.createdAt || 0);
-            const dateB = new Date(b.date || b.createdAt || 0);
-            return dateB - dateA;
+            let dateA, dateB;
+            
+            if (a.date) {
+                // If time is available, combine date and time
+                if (a.time) {
+                    dateA = new Date(`${a.date}T${a.time}`);
+                } else {
+                    dateA = new Date(a.date);
+                }
+            } else if (a.createdAt) {
+                dateA = new Date(a.createdAt);
+            } else {
+                dateA = new Date(0); // Fallback to epoch
+            }
+            
+            if (b.date) {
+                // If time is available, combine date and time
+                if (b.time) {
+                    dateB = new Date(`${b.date}T${b.time}`);
+                } else {
+                    dateB = new Date(b.date);
+                }
+            } else if (b.createdAt) {
+                dateB = new Date(b.createdAt);
+            } else {
+                dateB = new Date(0); // Fallback to epoch
+            }
+            
+            // Handle invalid dates
+            if (isNaN(dateA.getTime())) dateA = new Date(0);
+            if (isNaN(dateB.getTime())) dateB = new Date(0);
+            
+            return dateB.getTime() - dateA.getTime(); // Descending order (newest first)
         });
     }
 
@@ -687,6 +754,8 @@ class DataManager {
                 address: dentist?.address || '',
                 phone: dentist?.phone || '',
                 email: dentist?.email || '',
+                latitude: dentist?.latitude || null,
+                longitude: dentist?.longitude || null,
                 workingHours: {
                     weekdays: dentist?.workingHours?.weekdays || '8:00 AM - 6:00 PM',
                     saturday: dentist?.workingHours?.saturday || '8:00 AM - 4:00 PM',
@@ -704,24 +773,32 @@ class DataManager {
             const dentist = this.getUser(user.id);
             if (dentist) {
                 // Store clinic settings in the dentist's user object
+                // Use !== undefined to properly handle empty strings
                 const updatedDentist = {
                     ...dentist,
-                    clinicName: settings.clinicName || dentist.clinicName,
-                    branch: settings.branch || dentist.branch,
-                    address: settings.address || dentist.address,
-                    phone: settings.phone || dentist.phone,
-                    email: settings.email || dentist.email,
+                    clinicName: settings.clinicName !== undefined ? settings.clinicName : dentist.clinicName,
+                    branch: settings.branch !== undefined ? settings.branch : dentist.branch,
+                    address: settings.address !== undefined ? settings.address : dentist.address,
+                    clinicAddress: settings.address !== undefined ? settings.address : (dentist.clinicAddress || dentist.address),
+                    phone: settings.phone !== undefined ? settings.phone : dentist.phone,
+                    clinicPhone: settings.phone !== undefined ? settings.phone : (dentist.clinicPhone || dentist.phone),
+                    email: settings.email !== undefined ? settings.email : dentist.email,
+                    clinicEmail: settings.email !== undefined ? settings.email : (dentist.clinicEmail || dentist.email),
+                    latitude: settings.latitude !== undefined ? settings.latitude : dentist.latitude,
+                    longitude: settings.longitude !== undefined ? settings.longitude : dentist.longitude,
                     workingHours: {
                         weekdays: settings.weekdays || settings.workingHours?.weekdays || dentist.workingHours?.weekdays || '8:00 AM - 6:00 PM',
                         saturday: settings.saturday || settings.workingHours?.saturday || dentist.workingHours?.saturday || '8:00 AM - 4:00 PM',
                         sunday: settings.workingHours?.sunday || dentist.workingHours?.sunday || 'Closed'
                     },
                     clinicSettings: {
-                        clinicName: settings.clinicName || dentist.clinicName,
-                        branch: settings.branch || dentist.branch,
-                        address: settings.address || dentist.address,
-                        phone: settings.phone || dentist.phone,
-                        email: settings.email || dentist.email,
+                        clinicName: settings.clinicName !== undefined ? settings.clinicName : dentist.clinicName,
+                        branch: settings.branch !== undefined ? settings.branch : dentist.branch,
+                        address: settings.address !== undefined ? settings.address : dentist.address,
+                        phone: settings.phone !== undefined ? settings.phone : dentist.phone,
+                        email: settings.email !== undefined ? settings.email : dentist.email,
+                        latitude: settings.latitude !== undefined ? settings.latitude : dentist.latitude,
+                        longitude: settings.longitude !== undefined ? settings.longitude : dentist.longitude,
                         workingHours: {
                             weekdays: settings.weekdays || settings.workingHours?.weekdays || dentist.workingHours?.weekdays || '8:00 AM - 6:00 PM',
                             saturday: settings.saturday || settings.workingHours?.saturday || dentist.workingHours?.saturday || '8:00 AM - 4:00 PM',

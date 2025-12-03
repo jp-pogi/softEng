@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToothTrack - Database Initialization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #1F2937;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #6B7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background: #F3F4F6;
+            border-left: 4px solid #2563EB;
+            padding: 16px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .info-box h3 {
+            color: #1F2937;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            color: #4B5563;
+            line-height: 1.8;
+        }
+        
+        .info-box li {
+            margin-bottom: 8px;
+        }
+        
+        .warning-box {
+            background: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 16px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        
+        .warning-box strong {
+            color: #92400E;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #2563EB;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1D4ED8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        
+        .btn-danger {
+            background: #DC2626;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #B91C1C;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6B7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4B5563;
+        }
+        
+        #init-result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .success {
+            background: #D1FAE5;
+            border: 2px solid #10B981;
+            color: #065F46;
+        }
+        
+        .error {
+            background: #FEE2E2;
+            border: 2px solid #EF4444;
+            color: #991B1B;
+        }
+        
+        .warning {
+            background: #FEF3C7;
+            border: 2px solid #F59E0B;
+            color: #92400E;
+        }
+        
+        .credentials {
+            background: #EFF6FF;
+            border: 1px solid #3B82F6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        
+        .credentials h4 {
+            color: #1E40AF;
+            margin-bottom: 12px;
+        }
+        
+        .credentials ul {
+            list-style: none;
+            margin: 0;
+        }
+        
+        .credentials li {
+            padding: 8px 0;
+            border-bottom: 1px solid #DBEAFE;
+        }
+        
+        .credentials li:last-child {
+            border-bottom: none;
+        }
+        
+        .credentials strong {
+            color: #1E40AF;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-indicator.exists {
+            background: #10B981;
+        }
+        
+        .status-indicator.empty {
+            background: #6B7280;
+        }
+        
+        .database-list {
+            margin-top: 16px;
+        }
+        
+        .database-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .database-item:last-child {
+            border-bottom: none;
+        }
+        
+        .database-name {
+            flex: 1;
+            color: #374151;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .database-count {
+            color: #6B7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦷 ToothTrack Database Initialization</h1>
+        <p class="subtitle">Initialize all necessary databases for the ToothTrack system</p>
+        
+        <div class="info-box">
+            <h3>What this does:</h3>
+            <ul>
+                <li>Creates all required LocalStorage databases</li>
+                <li>Initializes default user accounts (Admin, Dentist, Patient)</li>
+                <li>Sets up system settings and configurations</li>
+                <li>Prepares the system for first-time use</li>
+            </ul>
+        </div>
+        
+        <div class="warning-box">
+            <strong>⚠️ Warning:</strong> If databases already exist, use "Reset & Initialize" to overwrite all existing data. This action cannot be undone!
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="initializeDatabase(false)">Initialize Database</button>
+            <button class="btn-danger" onclick="initializeDatabase(true)">Reset & Initialize</button>
+            <button class="btn-secondary" onclick="checkDatabaseStatus()">Check Status</button>
+        </div>
+        
+        <div id="init-result"></div>
+    </div>
+    
+    <script src="init-database.js"></script>
+    <script>
+        function initializeDatabase(forceReset) {
+            const resultContainer = document.getElementById('init-result');
+            resultContainer.style.display = 'none';
+            
+            if (forceReset) {
+                if (!confirm('⚠️ WARNING: This will DELETE ALL existing data and reset to default values. Are you sure you want to continue?')) {
+                    return;
+                }
+            }
+            
+            const result = initializeToothTrackDatabase(forceReset);
+            
+            resultContainer.style.display = 'block';
+            resultContainer.className = result.success ? 'success' : 'error';
+            
+            if (result.success) {
+                let html = `
+                    <h3>✅ Database Initialization Successful!</h3>
+                    <p>${result.message}</p>
+                `;
+                
+                if (result.databases) {
+                    html += '<div class="database-list"><strong>Database Status:</strong>';
+                    result.databases.forEach(db => {
+                        html += `
+                            <div class="database-item">
+                                <span class="status-indicator ${db.exists ? 'exists' : 'empty'}"></span>
+                                <span class="database-name">${db.key}</span>
+                                <span class="database-count">${db.itemCount} item(s)</span>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                
+                html += `
+                    <div class="credentials">
+                        <h4>🔑 Default Login Credentials:</h4>
+                        <ul>
+                            <li><strong>Admin:</strong> admin@toothtrack.ph / password123</li>
+                            <li><strong>Dentist:</strong> dentist@toothtrack.ph / password123</li>
+                            <li><strong>Patient:</strong> patient@toothtrack.ph / password123</li>
+                        </ul>
+                    </div>
+                    <p style="margin-top: 16px;"><strong>✨ System is ready to use!</strong> You can now open <a href="homepage.html" style="color: #2563EB;">homepage.html</a> or <a href="app.html" style="color: #2563EB;">app.html</a> to start using the system.</p>
+                `;
+                
+                resultContainer.innerHTML = html;
+            } else {
+                let html = `
+                    <h3>❌ Database Initialization Failed</h3>
+                    <p>${result.message}</p>
+                `;
+                
+                if (result.existingData) {
+                    html += '<p style="margin-top: 12px;">💡 Tip: Use the "Reset & Initialize" button to overwrite existing data.</p>';
+                }
+                
+                resultContainer.innerHTML = html;
+            }
+        }
+        
+        function checkDatabaseStatus() {
+            const databases = [
+                'toothtrack_users',
+                'toothtrack_appointments',
+                'toothtrack_patients',
+                'toothtrack_records',
+                'toothtrack_settings',
+                'toothtrack_notifications'
+            ];
+            
+            const status = databases.map(key => {
+                const data = localStorage.getItem(key);
+                return {
+                    key: key,
+                    exists: data !== null,
+                    itemCount: data ? (key === 'toothtrack_settings' ? 1 : JSON.parse(data).length) : 0
+                };
+            });
+            
+            const resultContainer = document.getElementById('init-result');
+            resultContainer.style.display = 'block';
+            resultContainer.className = status.every(db => db.exists) ? 'success' : 'warning';
+            
+            let html = '<h3>📊 Database Status</h3>';
+            html += '<div class="database-list">';
+            status.forEach(db => {
+                html += `
+                    <div class="database-item">
+                        <span class="status-indicator ${db.exists ? 'exists' : 'empty'}"></span>
+                        <span class="database-name">${db.key}</span>
+                        <span class="database-count">${db.exists ? db.itemCount + ' item(s)' : 'Not initialized'}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            if (status.every(db => db.exists)) {
+                html += '<p style="margin-top: 16px;">✅ All databases are initialized and ready to use.</p>';
+            } else {
+                html += '<p style="margin-top: 16px;">⚠️ Some databases are missing. Click "Initialize Database" to create them.</p>';
+            }
+            
+            resultContainer.innerHTML = html;
+        }
+        
+        // Check status on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkDatabaseStatus();
+        });
+    </script>
+</body>
+</html>
+
