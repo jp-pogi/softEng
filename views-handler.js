@@ -283,9 +283,9 @@ class ViewsHandler {
             }
         }
         
-        // Display dentist rating if available
+        // Display dentist rating if available (only for dentists)
+        const ratingCard = document.getElementById('dentist-rating-card');
         if (user.role === 'dentist') {
-            const ratingCard = document.getElementById('dentist-rating-card');
             const ratingValue = document.getElementById('dentist-rating-value');
             const ratingCount = document.getElementById('dentist-rating-count');
             
@@ -308,6 +308,11 @@ class ViewsHandler {
             
             // Render reviews section
             this.renderDentistReviews(user);
+        } else {
+            // Hide rating card for patients and other non-dentist roles
+            if (ratingCard) {
+                ratingCard.style.display = 'none';
+            }
         }
 
         // Update today's schedule
