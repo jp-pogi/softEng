@@ -291,7 +291,7 @@ class ViewsHandler {
             
             if (ratingCard) {
                 ratingCard.classList.remove('hidden');
-                ratingCard.style.display = 'block';
+                ratingCard.style.setProperty('display', 'block', 'important');
             }
             if (analytics.dentistRating) {
                 if (ratingValue) {

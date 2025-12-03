@@ -1992,7 +1992,7 @@ body {
 
 /* Hide rating card by default - only show for dentists via JavaScript */
 #dentist-rating-card {
-    display: none !important;
+    display: none;
 }
 
 /* Ensure buttons with hidden class are properly styled */
