@@ -19,8 +19,8 @@ class ValidationManager {
         const dateErrors = this.validateDate(appointment.date);
         if (dateErrors.length > 0) errors.push(...dateErrors);
 
-        // Time validation
-        const timeErrors = this.validateTime(appointment.time, appointment.date);
+        // Time validation - pass full appointment to get dentist's working hours
+        const timeErrors = this.validateTime(appointment.time, appointment.date, appointment);
         if (timeErrors.length > 0) errors.push(...timeErrors);
 
         // Conflict detection
@@ -30,7 +30,7 @@ class ValidationManager {
         const conflictErrors = this.checkConflicts(appointment, existingAppointments);
         if (conflictErrors.length > 0) errors.push(...conflictErrors);
 
-        // Service duration validation
+        // Service duration validation - pass full appointment to get dentist's working hours
         const durationErrors = this.validateServiceDuration(appointment);
         if (durationErrors.length > 0) errors.push(...durationErrors);
 
@@ -67,20 +67,82 @@ class ValidationManager {
         return errors;
     }
 
-    validateTime(time, date) {
+    validateTime(time, date, appointment = null) {
         const errors = [];
         const [hours, minutes] = time.split(':').map(Number);
         const dayOfWeek = new Date(date).getDay();
 
-        // Check business hours
-        if (dayOfWeek === 6) { // Saturday
-            if (time >= this.businessHours.saturdayEnd || time < this.businessHours.start) {
-                errors.push(`Saturday hours are ${this.businessHours.start} - ${this.businessHours.saturdayEnd}`);
+        // Try to get dentist's actual working hours
+        let workingHours = null;
+        let dentistName = null;
+        
+        if (appointment && appointment.dentist) {
+            dentistName = appointment.dentist;
+            // Find the dentist user
+            const dentists = dataManager.getUsers({ role: 'dentist' });
+            const foundDentist = dentists.find(d => 
+                d.name === dentistName || 
+                d.roleTitle === dentistName ||
+                d.name.toLowerCase().includes(dentistName.toLowerCase()) ||
+                d.roleTitle?.toLowerCase().includes(dentistName.toLowerCase())
+            );
+            
+            if (foundDentist) {
+                const settings = dataManager.getSettings(foundDentist);
+                if (settings && settings.workingHours) {
+                    if (dayOfWeek === 6) { // Saturday
+                        workingHours = settings.workingHours.saturday || settings.workingHours.weekdays;
+                    } else if (dayOfWeek === 0) { // Sunday
+                        workingHours = settings.workingHours.sunday || 'Closed';
+                    } else { // Weekdays (Monday-Friday)
+                        workingHours = settings.workingHours.weekdays;
+                    }
+                }
             }
-        } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays
-            if (time < this.businessHours.start || time >= this.businessHours.end) {
-                errors.push(`Business hours are ${this.businessHours.start} - ${this.businessHours.end}`);
+        }
+
+        // Parse working hours if available
+        let startHour = null;
+        let endHour = null;
+        
+        if (workingHours && typeof parseWorkingHours === 'function') {
+            // Check if closed first
+            if (workingHours.toLowerCase() === 'closed') {
+                errors.push('Dentist is closed on this day');
+                return errors;
             }
+            
+            const parsed = parseWorkingHours(workingHours);
+            if (parsed && parsed.start !== parsed.end && parsed.start !== 0 && parsed.end !== 0) {
+                startHour = parsed.start;
+                endHour = parsed.end;
+            }
+        }
+
+        // If we couldn't get dentist's hours, use default business hours
+        if (startHour === null || endHour === null) {
+            if (dayOfWeek === 6) { // Saturday
+                startHour = 8; // 8:00 AM
+                endHour = 16; // 4:00 PM
+            } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays
+                startHour = 8; // 8:00 AM
+                endHour = 18; // 6:00 PM
+            } else {
+                // Sunday - closed
+                errors.push('Clinic is closed on Sundays');
+                return errors;
+            }
+        }
+
+        // Check if time is within working hours
+        const timeInMinutes = hours * 60 + minutes;
+        const startInMinutes = startHour * 60;
+        const endInMinutes = endHour * 60;
+        
+        if (timeInMinutes < startInMinutes || timeInMinutes >= endInMinutes) {
+            const startTimeStr = `${startHour.toString().padStart(2, '0')}:00`;
+            const endTimeStr = `${endHour.toString().padStart(2, '0')}:00`;
+            errors.push(`Appointment time must be within working hours (${startTimeStr} - ${endTimeStr})`);
         }
 
         // Check if time is in 30-minute intervals
@@ -144,22 +206,72 @@ class ValidationManager {
             return errors;
         }
 
-        const duration = serviceDurations[appointment.service];
+        const duration = serviceDurations[appointment.service] || 30;
         if (!duration) {
             errors.push(`Unknown service: ${appointment.service}`);
         }
 
-        // Check if appointment fits in business hours
-        const [hours, minutes] = appointment.time.split(':').map(Number);
-        const endTime = this.minutesToTime(hours * 60 + minutes + duration);
-        const dayOfWeek = new Date(appointment.date).getDay();
+        // Try to get dentist's actual working hours
+        let workingHours = null;
+        let dentistName = null;
         
-        if (dayOfWeek === 6) { // Saturday
-            if (endTime > this.businessHours.saturdayEnd) {
-                errors.push(`Appointment extends beyond Saturday closing time (${this.businessHours.saturdayEnd})`);
+        if (appointment && appointment.dentist) {
+            dentistName = appointment.dentist;
+            // Find the dentist user
+            const dentists = dataManager.getUsers({ role: 'dentist' });
+            const foundDentist = dentists.find(d => 
+                d.name === dentistName || 
+                d.roleTitle === dentistName ||
+                d.name.toLowerCase().includes(dentistName.toLowerCase()) ||
+                d.roleTitle?.toLowerCase().includes(dentistName.toLowerCase())
+            );
+            
+            if (foundDentist) {
+                const settings = dataManager.getSettings(foundDentist);
+                if (settings && settings.workingHours) {
+                    const dayOfWeek = new Date(appointment.date).getDay();
+                    if (dayOfWeek === 6) { // Saturday
+                        workingHours = settings.workingHours.saturday || settings.workingHours.weekdays;
+                    } else if (dayOfWeek === 0) { // Sunday
+                        workingHours = settings.workingHours.sunday || 'Closed';
+                    } else { // Weekdays (Monday-Friday)
+                        workingHours = settings.workingHours.weekdays;
+                    }
+                }
             }
-        } else if (endTime > this.businessHours.end) {
-            errors.push(`Appointment extends beyond business hours (${this.businessHours.end})`);
+        }
+
+        // Parse working hours if available
+        let endHour = null;
+        
+        if (workingHours && typeof parseWorkingHours === 'function') {
+            const parsed = parseWorkingHours(workingHours);
+            if (parsed && parsed.start !== parsed.end) {
+                endHour = parsed.end;
+            }
+        }
+
+        // If we couldn't get dentist's hours, use default business hours
+        if (endHour === null) {
+            const dayOfWeek = new Date(appointment.date).getDay();
+            if (dayOfWeek === 6) { // Saturday
+                endHour = 16; // 4:00 PM
+            } else if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Weekdays
+                endHour = 18; // 6:00 PM
+            } else {
+                // Sunday - closed (already handled in validateTime)
+                return errors;
+            }
+        }
+
+        // Check if appointment fits in working hours
+        const [hours, minutes] = appointment.time.split(':').map(Number);
+        const endTimeInMinutes = hours * 60 + minutes + duration;
+        const closingTimeInMinutes = endHour * 60;
+        
+        if (endTimeInMinutes > closingTimeInMinutes) {
+            const endTimeStr = `${endHour.toString().padStart(2, '0')}:00`;
+            errors.push(`Appointment extends beyond working hours (closes at ${endTimeStr})`);
         }
 
         return errors;

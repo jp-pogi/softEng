@@ -846,8 +846,8 @@ class ViewsHandler {
         const user = dataManager.getCurrentUser();
         if (!user) return;
         
-        // Apply patient customization if user is a patient
-        if (user.role === 'patient' && typeof customizePatientAppointmentsView === 'function') {
+        // Apply customization for all roles (handles button visibility)
+        if (typeof customizePatientAppointmentsView === 'function') {
             customizePatientAppointmentsView();
         }
         
@@ -872,14 +872,17 @@ class ViewsHandler {
             dateFilter.addEventListener('change', () => this.loadAppointments(1));
         }
 
-        // Add appointment button
+        // Add appointment button - handled by customizePatientAppointmentsView for all roles
+        // Ensure button visibility is set correctly when view loads
+        if (typeof customizePatientAppointmentsView === 'function') {
+            customizePatientAppointmentsView();
+        }
 
         // View change handler
         document.addEventListener('viewChanged', (e) => {
             if (e.detail.view === 'appointments') {
-                // Apply patient customization FIRST
-                const user = dataManager.getCurrentUser();
-                if (user && user.role === 'patient' && typeof customizePatientAppointmentsView === 'function') {
+                // Apply customization for all roles FIRST (handles button visibility)
+                if (typeof customizePatientAppointmentsView === 'function') {
                     customizePatientAppointmentsView();
                 }
                 // Then load appointments
@@ -1182,6 +1185,9 @@ class ViewsHandler {
         const today = getTodayDate();
         const isPatient = user && user.role === 'patient';
         
+        // Debug: Log patient status
+        console.log('showAddAppointmentModal - isPatient:', isPatient, 'user:', user);
+        
         // Get patients - filtered by role (patients can't see other patients)
         let patients = dataManager.getPatients();
         if (isPatient) {
@@ -1267,8 +1273,15 @@ class ViewsHandler {
                 </div>
                 <div class="form-group">
                     <label>Time *</label>
-                    <input type="time" name="time" id="appointment-time" step="1800" required>
-                    <small class="error-message" id="appointment-validation-error"></small>
+                    ${isPatient ? `
+                        <div id="appointment-time-slots" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px;">
+                            <p style="color: #6B7280; text-align: center; padding: 20px; grid-column: 1 / -1;">Please select a date first</p>
+                        </div>
+                        <input type="hidden" name="time" id="appointment-time" required>
+                    ` : `
+                        <input type="time" name="time" id="appointment-time" step="1800" required>
+                        <small class="error-message" id="appointment-validation-error"></small>
+                    `}
                 </div>
                 ${statusSelection}
                 ${isPatient ? '' : `
@@ -1284,7 +1297,7 @@ class ViewsHandler {
             </form>
         `;
 
-        const modal = showModal('Add New Appointment', content, [
+        const modalElement = showModal('Add New Appointment', content, [
             {
                 label: 'Cancel',
                 class: 'btn-outline',
@@ -1306,8 +1319,16 @@ class ViewsHandler {
                     const formData = new FormData(form);
                     const appointment = Object.fromEntries(formData);
                     
-                    // For patients, auto-fill their own information
+                    // For patients, ensure time is set from time slot selection
                     if (isPatient) {
+                        const timeInput = document.getElementById('appointment-time');
+                        if (timeInput && timeInput.value) {
+                            appointment.time = timeInput.value;
+                        }
+                        if (!appointment.time) {
+                            showNotification('Please select a time slot', 'error');
+                            return;
+                        }
                         appointment.patientId = user.id;
                         appointment.patientName = user.name;
                         appointment.email = user.email || '';
@@ -1385,6 +1406,9 @@ class ViewsHandler {
                 }
             }
         ]);
+        
+        // Store modal reference for time slot loading
+        const modalRef = modalElement || document.querySelector('.modal-overlay');
 
         // Setup patient select change (only for non-patients)
         setTimeout(() => {
@@ -1423,6 +1447,75 @@ class ViewsHandler {
                     });
                 }
                 
+                // Setup time slot loading for patients - use multiple attempts to find elements
+                const setupTimeSlots = () => {
+                    const modal = modalRef || document.querySelector('.modal-overlay');
+                    const dateInput = modal ? modal.querySelector('#appointment-date') : document.getElementById('appointment-date');
+                    const timeSlotsContainer = modal ? modal.querySelector('#appointment-time-slots') : document.getElementById('appointment-time-slots');
+                    const timeInput = modal ? modal.querySelector('#appointment-time') : document.getElementById('appointment-time');
+                    
+                    // Debug logging
+                    console.log('Setting up time slots for patient:', {
+                        dateInput: !!dateInput,
+                        timeSlotsContainer: !!timeSlotsContainer,
+                        timeInput: !!timeInput,
+                        isPatient: isPatient,
+                        modal: !!modal,
+                        dateValue: dateInput ? dateInput.value : 'no dateInput'
+                    });
+                    
+                    if (!timeSlotsContainer) {
+                        console.error('Time slots container not found!');
+                        // Retry after a short delay
+                        setTimeout(setupTimeSlots, 100);
+                        return;
+                    }
+                    
+                    if (dateInput && timeInput) {
+                        // Load time slots when date changes
+                        const loadSlots = () => {
+                            const currentDate = dateInput.value;
+                            console.log('loadSlots called, date:', currentDate);
+                            if (currentDate) {
+                                console.log('Loading time slots for date:', currentDate);
+                                try {
+                                    this.loadAppointmentTimeSlots(currentDate, timeSlotsContainer, timeInput);
+                                } catch (error) {
+                                    console.error('Error loading time slots:', error);
+                                    timeSlotsContainer.innerHTML = '<p style="color: #EF4444; text-align: center; padding: 20px; grid-column: 1 / -1;">Error loading time slots. Please try again.</p>';
+                                }
+                            } else {
+                                timeSlotsContainer.innerHTML = '<p style="color: #6B7280; text-align: center; padding: 20px; grid-column: 1 / -1;">Please select a date first</p>';
+                            }
+                        };
+                        
+                        // Add event listeners
+                        dateInput.addEventListener('change', loadSlots);
+                        dateInput.addEventListener('input', () => {
+                            setTimeout(loadSlots, 50);
+                        });
+                        
+                        // Also load if date is already set when modal opens
+                        if (dateInput.value) {
+                            console.log('Date already set, loading slots immediately');
+                            setTimeout(loadSlots, 100);
+                        }
+                    } else {
+                        console.error('Missing dateInput or timeInput:', {
+                            dateInput: !!dateInput,
+                            timeInput: !!timeInput
+                        });
+                        // Retry after a short delay
+                        setTimeout(setupTimeSlots, 100);
+                    }
+                };
+                
+                // Try immediately and also after delays
+                setupTimeSlots();
+                setTimeout(setupTimeSlots, 100);
+                setTimeout(setupTimeSlots, 300);
+                setTimeout(setupTimeSlots, 500);
+                
                 // Close dropdown when clicking outside
                 setTimeout(() => {
                     document.addEventListener('click', (e) => {
@@ -1437,33 +1530,81 @@ class ViewsHandler {
                 }, 100);
             }
 
-            // Real-time validation
-            const dateInput = document.getElementById('appointment-date');
-            const timeInput = document.getElementById('appointment-time');
-            const serviceSelect = document.getElementById('appointment-service');
-            const errorMsg = document.getElementById('appointment-validation-error');
-            
-            const validateOnChange = () => {
-                if (dateInput.value && timeInput.value && serviceSelect.value) {
-                    const testAppointment = {
-                        date: dateInput.value,
-                        time: timeInput.value,
-                        service: serviceSelect.value
+            // Real-time validation (only for non-patients with time input)
+            if (!isPatient) {
+                const dateInput = document.getElementById('appointment-date');
+                const timeInput = document.getElementById('appointment-time');
+                const serviceSelect = document.getElementById('appointment-service');
+                const errorMsg = document.getElementById('appointment-validation-error');
+                
+                if (errorMsg) {
+                    const validateOnChange = () => {
+                        if (dateInput.value && timeInput.value && serviceSelect.value) {
+                            const testAppointment = {
+                                date: dateInput.value,
+                                time: timeInput.value,
+                                service: serviceSelect.value
+                            };
+                            const validation = validationManager.validateAppointment(testAppointment);
+                            if (validation.errors.length > 0) {
+                                errorMsg.textContent = validation.errors[0];
+                                errorMsg.style.display = 'block';
+                            } else {
+                                errorMsg.textContent = '';
+                                errorMsg.style.display = 'none';
+                            }
+                        }
                     };
-                    const validation = validationManager.validateAppointment(testAppointment);
-                    if (validation.errors.length > 0) {
-                        errorMsg.textContent = validation.errors[0];
-                        errorMsg.style.display = 'block';
-                    } else {
-                        errorMsg.textContent = '';
-                        errorMsg.style.display = 'none';
-                    }
-                }
-            };
 
-            if (dateInput) dateInput.addEventListener('change', validateOnChange);
-            if (timeInput) timeInput.addEventListener('change', validateOnChange);
-            if (serviceSelect) serviceSelect.addEventListener('change', validateOnChange);
+                    if (dateInput) dateInput.addEventListener('change', validateOnChange);
+                    if (timeInput) timeInput.addEventListener('change', validateOnChange);
+                    if (serviceSelect) serviceSelect.addEventListener('change', validateOnChange);
+                }
+            }
+            
+            // Reload time slots when dentist or service changes (for patients)
+            if (isPatient) {
+                const modal = modalRef || document.querySelector('.modal-overlay');
+                const dentistSelect = modal ? modal.querySelector('#appointment-dentist-select') : document.getElementById('appointment-dentist-select');
+                const serviceSelect = modal ? modal.querySelector('#appointment-service') : document.getElementById('appointment-service');
+                const dateInput = modal ? modal.querySelector('#appointment-date') : document.getElementById('appointment-date');
+                const timeSlotsContainer = modal ? modal.querySelector('#appointment-time-slots') : document.getElementById('appointment-time-slots');
+                const timeInput = modal ? modal.querySelector('#appointment-time') : document.getElementById('appointment-time');
+                
+                const reloadTimeSlots = () => {
+                    if (dateInput && dateInput.value && timeSlotsContainer && timeInput) {
+                        console.log('Reloading time slots due to dentist/service change');
+                        this.loadAppointmentTimeSlots(dateInput.value, timeSlotsContainer, timeInput);
+                    }
+                };
+                
+                // Listen for dentist selection changes (via the selectDentist function)
+                // We'll also add a custom event listener on the hidden input
+                if (dentistSelect) {
+                    // Create a MutationObserver to watch for value changes
+                    const observer = new MutationObserver(() => {
+                        if (dateInput && dateInput.value) {
+                            setTimeout(reloadTimeSlots, 100);
+                        }
+                    });
+                    observer.observe(dentistSelect, { attributes: true, attributeFilter: ['value'] });
+                    
+                    // Also listen for input events
+                    dentistSelect.addEventListener('input', () => {
+                        if (dateInput && dateInput.value) {
+                            setTimeout(reloadTimeSlots, 100);
+                        }
+                    });
+                }
+                
+                if (serviceSelect) {
+                    serviceSelect.addEventListener('change', () => {
+                        if (dateInput && dateInput.value) {
+                            setTimeout(reloadTimeSlots, 100);
+                        }
+                    });
+                }
+            }
         }, 100);
     }
 
@@ -4639,6 +4780,22 @@ class ViewsHandler {
         if (arrow) {
             arrow.style.transform = 'rotate(0deg)';
         }
+        
+        // Reload time slots if date is already selected (for patients)
+        const user = dataManager.getCurrentUser();
+        if (user && user.role === 'patient') {
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+                const modal = document.querySelector('.modal-overlay');
+                const dateInput = modal ? modal.querySelector('#appointment-date') : document.getElementById('appointment-date');
+                const timeSlotsContainer = modal ? modal.querySelector('#appointment-time-slots') : document.getElementById('appointment-time-slots');
+                const timeInput = modal ? modal.querySelector('#appointment-time') : document.getElementById('appointment-time');
+                if (dateInput && dateInput.value && timeSlotsContainer && timeInput) {
+                    console.log('Reloading time slots after dentist selection');
+                    this.loadAppointmentTimeSlots(dateInput.value, timeSlotsContainer, timeInput);
+                }
+            }, 100);
+        }
     }
 
     setupServiceSelection() {
@@ -4878,6 +5035,311 @@ class ViewsHandler {
                 container.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 this.bookingData.time = btn.getAttribute('data-time');
+            });
+        });
+    }
+
+    loadAppointmentTimeSlots(date, container, timeInput) {
+        console.log('loadAppointmentTimeSlots called with:', { date, container: !!container, timeInput: !!timeInput });
+        
+        // Debug: Check if elements exist
+        if (!container) {
+            console.error('Time slots container not found in function');
+            // Try to find it again
+            container = document.getElementById('appointment-time-slots');
+            if (!container) {
+                console.error('Time slots container still not found after retry');
+                return;
+            }
+        }
+        
+        if (!date) {
+            console.log('No date provided, showing placeholder');
+            if (container) {
+                container.innerHTML = '<p style="color: #6B7280; text-align: center; padding: 20px; grid-column: 1 / -1;">Please select a date first</p>';
+            }
+            return;
+        }
+        
+        console.log('Processing time slots for date:', date);
+        
+        // Validate that the selected date is not in the past
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(date);
+        selected.setHours(0, 0, 0, 0);
+        
+        if (selected < today) {
+            container.innerHTML = '<p style="color: #EF4444; text-align: center; padding: 20px; grid-column: 1 / -1;">Cannot book appointments in the past. Please select today or a future date.</p>';
+            const dateInput = document.getElementById('appointment-date');
+            if (dateInput) dateInput.value = '';
+            return;
+        }
+        
+        const isToday = selected.getTime() === today.getTime();
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Get selected dentist from form
+        const dentistSelect = document.getElementById('appointment-dentist-select');
+        const dentistSelectText = document.getElementById('dentist-select-text');
+        let dentistName = '';
+        
+        // Try to get from hidden input first
+        if (dentistSelect && dentistSelect.value) {
+            dentistName = dentistSelect.value.trim();
+        } 
+        // Fallback to display text if hidden input is empty
+        else if (dentistSelectText && dentistSelectText.textContent && 
+                 dentistSelectText.textContent !== 'Select Dentist (choose service first)' &&
+                 dentistSelectText.textContent !== 'Select Dentist') {
+            dentistName = dentistSelectText.textContent.trim();
+        }
+        
+        // Get dentist's working hours
+        let workingHours = null;
+        let foundDentist = null;
+        
+        if (dentistName) {
+            const dentists = dataManager.getUsers({ role: 'dentist' });
+            // Try to find dentist by name, roleTitle, or any part of their name (case-insensitive)
+            foundDentist = dentists.find(d => {
+                const fullName = (d.name || '').toLowerCase().trim();
+                const roleTitle = (d.roleTitle || '').toLowerCase().trim();
+                const searchName = dentistName.toLowerCase().trim();
+                
+                // Exact matches
+                if (fullName === searchName || roleTitle === searchName) return true;
+                
+                // Partial matches
+                if (fullName.includes(searchName) || searchName.includes(fullName)) return true;
+                if (roleTitle.includes(searchName) || searchName.includes(roleTitle)) return true;
+                
+                // Match by removing common prefixes
+                const cleanFullName = fullName.replace(/^(dr\.?|dentist)\s+/i, '').trim();
+                const cleanRoleTitle = roleTitle.replace(/^(dr\.?|dentist)\s+/i, '').trim();
+                const cleanSearchName = searchName.replace(/^(dr\.?|dentist)\s+/i, '').trim();
+                
+                if (cleanFullName === cleanSearchName || cleanRoleTitle === cleanSearchName) return true;
+                if (cleanFullName.includes(cleanSearchName) || cleanSearchName.includes(cleanFullName)) return true;
+                
+                return false;
+            });
+            
+            if (foundDentist) {
+                console.log('Found dentist:', foundDentist.name, foundDentist.roleTitle);
+                const settings = dataManager.getSettings(foundDentist);
+                console.log('Dentist settings:', settings);
+                
+                if (settings && settings.workingHours) {
+                    const dayOfWeek = new Date(date).getDay();
+                    if (dayOfWeek === 6) { // Saturday
+                        workingHours = settings.workingHours.saturday || settings.workingHours.weekdays;
+                    } else if (dayOfWeek === 0) { // Sunday
+                        workingHours = settings.workingHours.sunday || 'Closed';
+                    } else { // Weekdays (Monday-Friday)
+                        workingHours = settings.workingHours.weekdays;
+                    }
+                    console.log('Selected working hours for day', dayOfWeek, ':', workingHours);
+                } else {
+                    console.log('No working hours found in settings, will use defaults');
+                }
+            } else {
+                console.log('Dentist not found for name:', dentistName);
+            }
+        }
+        
+        // Generate time slots based on dentist's working hours
+        let timeSlots = [];
+        if (!dentistName) {
+            container.innerHTML = '<p style="color: #6B7280; text-align: center; padding: 20px; grid-column: 1 / -1;">Please select a dentist first</p>';
+            return;
+        }
+        
+        // If dentist not found, still show default slots but with a warning
+        if (!foundDentist) {
+            console.warn('Dentist not found for:', dentistName, '- using default hours');
+            // Use default hours but still allow booking
+            workingHours = null; // Will trigger default slot generation
+        }
+        
+        if (workingHours && workingHours.toLowerCase() !== 'closed') {
+            console.log('Generating time slots from working hours:', workingHours);
+            if (typeof getScheduleTimeSlots === 'function') {
+                timeSlots = getScheduleTimeSlots(workingHours);
+                console.log('Generated time slots:', timeSlots);
+            } else {
+                // Fallback: parse manually (same logic as parseWorkingHours)
+                const match = workingHours.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                if (match) {
+                    let startHour = parseInt(match[1]);
+                    const startMinute = parseInt(match[2]);
+                    const startPeriod = match[3].toUpperCase();
+                    let endHour = parseInt(match[4]);
+                    const endMinute = parseInt(match[5]);
+                    const endPeriod = match[6].toUpperCase();
+                    
+                    // Convert to 24-hour format (0-23)
+                    if (startPeriod === 'PM' && startHour !== 12) {
+                        startHour += 12;
+                    } else if (startPeriod === 'AM' && startHour === 12) {
+                        startHour = 0; // 12:00 AM = 0:00
+                    }
+                    
+                    if (endPeriod === 'PM' && endHour !== 12) {
+                        endHour += 12;
+                    } else if (endPeriod === 'AM' && endHour === 12) {
+                        endHour = 0; // 12:00 AM = 0:00
+                    }
+                    
+                    // Ensure hours are in valid range (0-23)
+                    startHour = Math.max(0, Math.min(23, startHour));
+                    endHour = Math.max(0, Math.min(23, endHour));
+                    
+                    // Calculate end hour: if there are minutes, round up to next hour
+                    let endSlotHour = endHour;
+                    if (endMinute > 0) {
+                        endSlotHour = endHour + 1;
+                        if (endSlotHour >= 24) {
+                            endSlotHour = 24; // Include up to 23:00
+                        }
+                    }
+                    
+                    // Generate slots from start to end (exclusive)
+                    for (let hour = startHour; hour < endSlotHour; hour++) {
+                        timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+                    }
+                } else {
+                    console.error('Failed to parse working hours in fallback:', workingHours);
+                    // Don't use defaults - this is an error condition
+                    // The code will handle empty slots array below
+                }
+            }
+        } else if (workingHours && workingHours.toLowerCase() === 'closed') {
+            // Show message if clinic is closed on this day
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayName = dayNames[new Date(date).getDay()];
+            container.innerHTML = `<p style="color: #EF4444; text-align: center; padding: 20px; grid-column: 1 / -1;">Clinic is closed on ${dayName}. Please select a different date.</p>`;
+            return;
+        } else {
+            // No working hours set - show default slots with a note
+            console.log('No working hours found, using default slots');
+            for (let hour = 9; hour <= 17; hour++) {
+                timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+            }
+            // Show a note that default hours are being used
+            const note = document.createElement('p');
+            note.style.cssText = 'color: #F59E0B; text-align: center; padding: 10px; grid-column: 1 / -1; font-size: 12px; background: #FEF3C7; border-radius: 4px; margin-bottom: 8px;';
+            note.textContent = 'Note: Using default hours. Dentist has not set clinic hours yet.';
+            container.appendChild(note);
+        }
+        
+        // Get existing appointments for this dentist and date
+        // Use the found dentist's name or the selected name for filtering
+        const searchDentistName = foundDentist ? (foundDentist.name || foundDentist.roleTitle || dentistName) : dentistName;
+        const existingAppointments = dentistName ? dataManager.getAppointments({ 
+            date: date, 
+            dentist: searchDentistName 
+        }) : [];
+        
+        // Get selected service to determine duration
+        const serviceSelect = document.getElementById('appointment-service');
+        const selectedService = serviceSelect ? serviceSelect.value : '';
+        
+        // Block time slots based on service duration
+        const bookedTimes = new Set();
+        existingAppointments
+            .filter(apt => apt.status !== 'cancelled' && apt.service)
+            .forEach(apt => {
+                if (apt.time) {
+                    const [hour] = apt.time.split(':').map(Number);
+                    const startTime = `${hour.toString().padStart(2, '0')}:00`;
+                    
+                    const hours = typeof getAppointmentHours === 'function' ? getAppointmentHours(apt.service) : 1;
+                    
+                    for (let i = 0; i < hours; i++) {
+                        const slotIndex = timeSlots.findIndex(s => s === startTime);
+                        if (slotIndex !== -1 && (slotIndex + i) < timeSlots.length) {
+                            bookedTimes.add(timeSlots[slotIndex + i]);
+                        }
+                    }
+                }
+            });
+        
+        // Ensure we have time slots (only use defaults if no working hours were found)
+        if (timeSlots.length === 0 && (!workingHours || workingHours.toLowerCase() === 'closed')) {
+            // Only use defaults if dentist has no working hours set
+            // Don't add defaults if we just couldn't parse the hours - that's an error
+            if (!foundDentist || !workingHours) {
+                console.warn('No time slots generated and no working hours - using minimal defaults');
+                // Use a wider default range only as last resort
+                for (let hour = 8; hour <= 18; hour++) {
+                    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+                }
+            }
+        }
+        
+        // If still no slots, there's a problem with parsing
+        if (timeSlots.length === 0) {
+            console.error('Failed to generate time slots from working hours:', workingHours);
+            container.innerHTML = '<p style="color: #EF4444; text-align: center; padding: 20px; grid-column: 1 / -1;">Unable to load time slots. Please check dentist working hours.</p>';
+            return;
+        }
+        
+        // Render time slots
+        if (!container) {
+            console.error('Time slots container not found');
+            return;
+        }
+        
+        console.log('Rendering', timeSlots.length, 'time slots');
+        
+        // Show working hours info if available
+        let hoursInfo = '';
+        if (foundDentist && workingHours && workingHours.toLowerCase() !== 'closed') {
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const dayName = dayNames[new Date(date).getDay()];
+            hoursInfo = `<p style="color: #059669; text-align: center; padding: 8px; grid-column: 1 / -1; font-size: 12px; background: #D1FAE5; border-radius: 4px; margin-bottom: 8px;">
+                <i class="fas fa-clock"></i> ${foundDentist.name || foundDentist.roleTitle}'s ${dayName} hours: ${workingHours}
+            </p>`;
+        } else if (!workingHours || (workingHours && workingHours.toLowerCase() === 'closed')) {
+            // Show note if using default hours
+            if (!foundDentist || !workingHours) {
+                hoursInfo = `<p style="color: #F59E0B; text-align: center; padding: 8px; grid-column: 1 / -1; font-size: 12px; background: #FEF3C7; border-radius: 4px; margin-bottom: 8px;">
+                    <i class="fas fa-info-circle"></i> Using default hours (9:00 AM - 5:00 PM)
+                </p>`;
+            }
+        }
+        
+        container.innerHTML = hoursInfo + timeSlots.map(slot => {
+            const isBooked = bookedTimes.has(slot);
+            let isPast = false;
+            if (isToday) {
+                const [slotHour] = slot.split(':').map(Number);
+                if (slotHour < currentHour || (slotHour === currentHour && currentMinute > 0)) {
+                    isPast = true;
+                }
+            }
+            const isDisabled = isBooked || isPast;
+            const disabledTitle = isBooked ? 'Already booked' : (isPast ? 'Past time slot' : '');
+            return `<div class="time-slot ${isDisabled ? 'disabled' : ''}" data-time="${slot}" style="padding: 10px; text-align: center; border: 1px solid ${isDisabled ? '#D1D5DB' : '#2563EB'}; border-radius: 6px; background: ${isDisabled ? '#F3F4F6' : 'white'}; color: ${isDisabled ? '#9CA3AF' : '#2563EB'}; cursor: ${isDisabled ? 'not-allowed' : 'pointer'}; transition: all 0.2s; opacity: ${isDisabled ? '0.6' : '1'};" ${isDisabled ? `title="${disabledTitle}"` : ''}>
+                        ${slot} ${isDisabled ? '<i class="fas fa-lock"></i>' : ''}
+                    </div>`;
+        }).join('');
+        
+        // Time slot selection
+        container.querySelectorAll('.time-slot:not(.disabled)').forEach(slot => {
+            slot.addEventListener('click', function() {
+                container.querySelectorAll('.time-slot').forEach(s => {
+                    s.style.background = s.classList.contains('disabled') ? '#F3F4F6' : 'white';
+                    s.style.color = s.classList.contains('disabled') ? '#9CA3AF' : '#2563EB';
+                });
+                this.style.background = '#2563EB';
+                this.style.color = 'white';
+                if (timeInput) {
+                    timeInput.value = this.getAttribute('data-time');
+                }
             });
         });
     }

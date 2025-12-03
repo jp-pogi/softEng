@@ -229,17 +229,17 @@ function getTimeSlots() {
     return slots;
 }
 
-// Parse working hours string (e.g., "8:00 AM - 6:00 PM") to get start and end hours
+// Parse working hours string (e.g., "4:00 AM - 8:00 PM" or "8:00 AM - 6:00 PM") to get start and end hours
 function parseWorkingHours(workingHoursStr) {
     if (!workingHoursStr || workingHoursStr.toLowerCase() === 'closed') {
-        return { start: 8, end: 8 }; // Return empty range if closed
+        return { start: 0, end: 0 }; // Return empty range if closed
     }
     
-    // Match patterns like "8:00 AM - 6:00 PM" or "8:00AM-6:00PM"
+    // Match patterns like "4:00 AM - 8:00 PM" or "8:00AM-6:00PM" or "12:00 AM - 11:59 PM"
     const match = workingHoursStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)/i);
     if (!match) {
-        // Default to 8 AM - 6 PM if parsing fails
-        return { start: 8, end: 18 };
+        console.error('Failed to parse working hours:', workingHoursStr);
+        return null; // Return null to indicate parsing failure
     }
     
     let startHour = parseInt(match[1]);
@@ -249,42 +249,60 @@ function parseWorkingHours(workingHoursStr) {
     const endMinute = parseInt(match[5]);
     const endPeriod = match[6].toUpperCase();
     
-    // Convert to 24-hour format
+    // Convert to 24-hour format (0-23)
     if (startPeriod === 'PM' && startHour !== 12) {
         startHour += 12;
     } else if (startPeriod === 'AM' && startHour === 12) {
-        startHour = 0;
+        startHour = 0; // 12:00 AM = 0:00
     }
     
     if (endPeriod === 'PM' && endHour !== 12) {
         endHour += 12;
     } else if (endPeriod === 'AM' && endHour === 12) {
-        endHour = 0;
+        endHour = 0; // 12:00 AM = 0:00
     }
     
-    // Round start down to nearest hour, end up to nearest hour
-    const start = startHour;
-    const end = endHour + (endMinute > 0 ? 1 : 0);
+    // Ensure hours are in valid range (0-23)
+    startHour = Math.max(0, Math.min(23, startHour));
+    endHour = Math.max(0, Math.min(23, endHour));
     
-    return { start, end };
+    // Calculate end hour: if there are minutes, round up to next hour
+    // For example, 6:30 PM becomes 19:00 (7 PM), so slots go from startHour to endHour (exclusive)
+    let endSlotHour = endHour;
+    if (endMinute > 0) {
+        endSlotHour = endHour + 1;
+        // Handle midnight rollover (e.g., 11:30 PM -> 12:00 AM next day = 24:00 = 0:00)
+        if (endSlotHour >= 24) {
+            endSlotHour = 24; // Include up to 23:00
+        }
+    }
+    
+    return { start: startHour, end: endSlotHour };
 }
 
 // Get hourly time slots for schedule view based on working hours
 function getScheduleTimeSlots(workingHours = null) {
-    let startHour = 8;
-    let endHour = 18;
-    
-    if (workingHours) {
-        const parsed = parseWorkingHours(workingHours);
-        startHour = parsed.start;
-        endHour = parsed.end;
+    if (!workingHours || workingHours.toLowerCase() === 'closed') {
+        return []; // Return empty array if closed or no hours
     }
     
+    const parsed = parseWorkingHours(workingHours);
+    if (!parsed || parsed.start === parsed.end) {
+        console.error('Invalid working hours or closed:', workingHours);
+        return []; // Return empty if parsing failed or closed
+    }
+    
+    const startHour = parsed.start;
+    const endHour = parsed.end;
+    
+    // Generate slots from start to end (exclusive, so endHour is not included)
     const slots = [];
     for (let hour = startHour; hour < endHour; hour++) {
+        // Handle hours 0-23 (midnight to 11 PM)
         const time = `${hour.toString().padStart(2, '0')}:00`;
         slots.push(time);
     }
+    
     return slots;
 }
 

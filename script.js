@@ -381,15 +381,19 @@ function hidePatientRestrictedButtons() {
 
     // Hide add buttons that patients shouldn't see
     const addAppointmentBtn = document.getElementById('add-appointment-btn');
+    const bookAppointmentBtn = document.getElementById('book-appointment-btn');
     const addPatientBtn = document.getElementById('add-patient-btn');
     const addRecordBtn = document.getElementById('add-record-btn');
 
-    // Patients can create appointments, so show that button
+    // Patients use "Book Appointment" button instead of "New Appointment"
     if (addAppointmentBtn) {
+        addAppointmentBtn.classList.add('hidden');
+    }
+    if (bookAppointmentBtn) {
         if (rolePermissions.canPerformAction(user, 'createAppointment')) {
-            addAppointmentBtn.classList.remove('hidden');
+            bookAppointmentBtn.classList.remove('hidden');
         } else {
-            addAppointmentBtn.classList.add('hidden');
+            bookAppointmentBtn.classList.add('hidden');
         }
     }
     
@@ -449,7 +453,33 @@ function customizePatientView(viewId) {
 
 function customizePatientAppointmentsView() {
     const user = dataManager.getCurrentUser();
-    if (!user || user.role !== 'patient') return;
+    if (!user || user.role !== 'patient') {
+        // For non-patients, show "New Appointment" and hide "Book Appointment"
+        const bookAppointmentBtn = document.getElementById('book-appointment-btn');
+        const addAppointmentBtn = document.getElementById('add-appointment-btn');
+        if (bookAppointmentBtn) {
+            bookAppointmentBtn.classList.add('hidden');
+        }
+        if (addAppointmentBtn && user) {
+            // Show for admin/dentist if they have permission
+            if (rolePermissions.canPerformAction(user, 'createAppointment')) {
+                addAppointmentBtn.classList.remove('hidden');
+            } else {
+                addAppointmentBtn.classList.add('hidden');
+            }
+        }
+        return;
+    }
+
+    // Show "Book Appointment" button for patients, hide "New Appointment" button
+    const bookAppointmentBtn = document.getElementById('book-appointment-btn');
+    const addAppointmentBtn = document.getElementById('add-appointment-btn');
+    if (bookAppointmentBtn) {
+        bookAppointmentBtn.classList.remove('hidden');
+    }
+    if (addAppointmentBtn) {
+        addAppointmentBtn.classList.add('hidden');
+    }
 
     // Update table header for patients - show: Date, Service, Location, Doctor, Status, Actions
     const tableHeader = document.getElementById('appointments-table-header');
@@ -655,6 +685,7 @@ function customizeDentistDashboard() {
     }
     
     const addAppointmentBtn = document.getElementById('add-appointment-btn');
+    const bookAppointmentBtn = document.getElementById('book-appointment-btn');
     const addPatientBtn = document.getElementById('add-patient-btn');
     const addRecordBtn = document.getElementById('add-record-btn');
 
@@ -664,6 +695,9 @@ function customizeDentistDashboard() {
         } else {
             addAppointmentBtn.classList.add('hidden');
         }
+    }
+    if (bookAppointmentBtn) {
+        bookAppointmentBtn.classList.add('hidden');
     }
     if (addPatientBtn) {
         if (rolePermissions.canPerformAction(user, 'createPatient')) {

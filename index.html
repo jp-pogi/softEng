@@ -320,6 +320,12 @@
                         <h2 id="appointments-title">All Appointments</h2>
                         <p id="appointments-subtitle">Manage and track all appointments</p>
                     </div>
+                    <button class="btn btn-primary hidden" id="add-appointment-btn" onclick="if(typeof viewsHandler !== 'undefined') viewsHandler.showAddAppointmentModal();">
+                        <i class="fas fa-plus"></i> New Appointment
+                    </button>
+                    <button class="btn btn-primary hidden" id="book-appointment-btn" onclick="if(typeof viewsHandler !== 'undefined') viewsHandler.showAddAppointmentModal();">
+                        <i class="fas fa-calendar-plus"></i> Book Appointment
+                    </button>
                 </div>
 
                 <div class="filters-section">
