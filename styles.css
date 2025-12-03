@@ -1990,6 +1990,11 @@ body {
     display: none !important;
 }
 
+/* Hide rating card by default - only show for dentists via JavaScript */
+#dentist-rating-card {
+    display: none !important;
+}
+
 /* Ensure buttons with hidden class are properly styled */
 .btn.hidden {
     display: none !important;

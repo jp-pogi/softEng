@@ -290,6 +290,7 @@ class ViewsHandler {
             const ratingCount = document.getElementById('dentist-rating-count');
             
             if (ratingCard) {
+                ratingCard.classList.remove('hidden');
                 ratingCard.style.display = 'block';
             }
             if (analytics.dentistRating) {
@@ -312,6 +313,7 @@ class ViewsHandler {
             // Hide rating card for patients and other non-dentist roles
             if (ratingCard) {
                 ratingCard.style.display = 'none';
+                ratingCard.classList.add('hidden');
             }
         }
 

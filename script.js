@@ -108,6 +108,13 @@ function customizePatientDashboard() {
     const revenueCard = document.querySelector('.dashboard-card:nth-child(4)');
     if (revenueCard) revenueCard.classList.add('hidden');
     
+    // Hide rating card for patients (only for dentists)
+    const ratingCard = document.getElementById('dentist-rating-card');
+    if (ratingCard) {
+        ratingCard.style.display = 'none';
+        ratingCard.classList.add('hidden');
+    }
+    
     const reportsSection = document.querySelector('.reports-section');
     if (reportsSection) reportsSection.classList.add('hidden');
     
